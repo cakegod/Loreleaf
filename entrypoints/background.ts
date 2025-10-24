@@ -1,13 +1,20 @@
 import { store } from "~/utils/store";
 
 export default defineBackground(() => {
-	browser.runtime.onMessage.addListener(
-		async (message, _sender, sendResponse) => {
-			console.log(message);
-			const data = await browser.storage.local.get("hello");
-			sendResponse(data);
-		},
-	);
+	browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+		console.log("mesage:", message);
+		switch (message.action) {
+			case "GET_STORE": {
+				store.getValue().then(sendResponse);
+				break;
+			}
+			default: {
+				throw new Error(`${message.action} is invalid`);
+			}
+		}
+
+		return true;
+	});
 
 	browser.runtime.onInstalled.addListener(() => {
 		browser.contextMenus.create({

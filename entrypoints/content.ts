@@ -1,6 +1,6 @@
 export default defineContentScript({
 	matches: ["<all_urls>"],
-	async main() {
+	main() {
 		browser.runtime.onMessage.addListener(
 			async (message, _sender, sendResponse) => {
 				switch (message.action) {
@@ -21,7 +21,12 @@ export default defineContentScript({
 			},
 		);
 
-		const store = await browser.runtime.sendMessage("get-storage");
-		console.log(store);
+		browser.runtime
+			.sendMessage({
+				action: "GET_STORE",
+			})
+			.then(d => {
+				console.log(d)
+			});
 	},
 });
