@@ -1,34 +1,15 @@
 import { BACKGROUND_ACTIONS } from "@/utils/actions";
+import { sendMessage, onMessage } from "webext-bridge/content-script";
 
 export default defineContentScript({
 	matches: ["<all_urls>"],
 	main() {
-		browser.runtime.onMessage.addListener(
-			async (message, _sender, sendResponse) => {
-				switch (message.action) {
-					case CONTENT_ACTIONS.PROMPT: {
-						console.log(message);
-						sendResponse(prompt("context"));
-						break;
-					}
-					case CONTENT_ACTIONS.TOAST: {
-						alert(message.data);
-						break;
-					}
-
-					default: {
-						throw new Error(`${message.action} is invalid`);
-					}
-				}
-			},
+		onMessage(CONTENT_ACTIONS.PROMPT, () => {
+			return prompt("context");
+		});
+		onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => alert(data));
+		sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
+			console.log,
 		);
-
-		browser.runtime
-			.sendMessage({
-				action: BACKGROUND_ACTIONS.GET_CHARACTERS,
-			})
-			.then((d) => {
-				console.log(d);
-			});
 	},
 });

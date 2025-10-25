@@ -1,41 +1,21 @@
 import { BACKGROUND_ACTIONS } from "@/utils/actions";
-import { Character, charactersStore } from "@/utils/stores";
-
-async function addCharacter(data: Omit<Character, "id">): Promise<Character> {
-	const id = crypto.randomUUID();
-	const allChars = await charactersStore.getValue();
-	allChars[id] = { id, ...data };
-	await charactersStore.setValue(allChars);
-	return allChars[id];
-}
-
-async function getCharacters(filters?: {
-	novelId?: string;
-}): Promise<Character[]> {
-	return charactersStore.getValue().then((characters) => {
-		const charactersArray = Object.values(characters);
-		return filters?.novelId
-			? charactersArray.filter((c) => c.novelId === filters.novelId)
-			: charactersArray;
-	});
-}
+import { charactersStore } from "@/utils/stores";
+import { onMessage, sendMessage } from "webext-bridge/background";
 
 export default defineBackground(() => {
-	browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-		switch (message.action) {
-			case BACKGROUND_ACTIONS.GET_CHARACTERS: {
-				getCharacters({ ...message?.filters }).then(sendResponse);
-				break;
-			}
-			case BACKGROUND_ACTIONS.ADD_CHARACTER: {
-				addCharacter(message.data).then(sendResponse);
-				break;
-			}
-			default:
-				console.error(`Unknown action: ${message.action}`);
-		}
-
-		return true;
+	onMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, ({ data: { novelId } }) => {
+		return charactersStore.dispatch({
+			type: BACKGROUND_ACTIONS.GET_CHARACTERS,
+			payload: {
+				novelId: novelId ?? null,
+			},
+		});
+	});
+	onMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, ({ data }) => {
+		return charactersStore.dispatch({
+			type: BACKGROUND_ACTIONS.ADD_CHARACTER,
+			payload: data,
+		});
 	});
 
 	browser.runtime.onInstalled.addListener(() => {
@@ -49,17 +29,25 @@ export default defineBackground(() => {
 	browser.contextMenus.onClicked.addListener(async (info, tab) => {
 		if (!tab?.id || !info.selectionText) return;
 		const name = info.selectionText.trim();
-		const context = await browser.tabs.sendMessage(tab.id, {
-			action: CONTENT_ACTIONS.PROMPT,
-		});
+		const context = await sendMessage(
+			CONTENT_ACTIONS.PROMPT,
+			null,
+			`content-script@${tab.id}`,
+		);
+
+		if (!context) throw new Error("context cannot be empty");
 
 		// hardcode
 		const novelId = "novel-1";
-		await addCharacter({ name, context, novelId });
-
-		await browser.tabs.sendMessage(tab.id, {
-			action: CONTENT_ACTIONS.TOAST,
-			data: `Added ${name}!`,
+		charactersStore.dispatch({
+			type: BACKGROUND_ACTIONS.ADD_CHARACTER,
+			payload: { name, context, novelId },
 		});
+
+		await sendMessage(
+			CONTENT_ACTIONS.TOAST,
+			`Added ${name}!`,
+			`content-script@${tab.id}`,
+		);
 	});
 });

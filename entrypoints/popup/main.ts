@@ -1,11 +1,15 @@
+import { sendMessage } from "webext-bridge/popup";
 import "./style.css";
-import { charactersStore } from "@/utils/stores";
 
 const charactersContainer = document.querySelector(
 	".characters",
 ) as HTMLDivElement;
 
-const characters = await charactersStore.getValue();
+const characters = await sendMessage(
+	BACKGROUND_ACTIONS.GET_CHARACTERS,
+	{},
+	"background",
+);
 console.log("from popup", characters);
 
 for (const char of Object.values(characters)) {
