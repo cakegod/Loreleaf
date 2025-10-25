@@ -1,16 +1,38 @@
-import { store } from "~/utils/store";
+import { BACKGROUND_ACTIONS } from "@/utils/actions";
+import { Character, charactersStore } from "@/utils/stores";
+
+async function addCharacter(data: Omit<Character, "id">): Promise<Character> {
+	const id = crypto.randomUUID();
+	const allChars = await charactersStore.getValue();
+	allChars[id] = { id, ...data };
+	await charactersStore.setValue(allChars);
+	return allChars[id];
+}
+
+async function getCharacters(filters?: {
+	novelId?: string;
+}): Promise<Character[]> {
+	return charactersStore.getValue().then((characters) => {
+		const charactersArray = Object.values(characters);
+		return filters?.novelId
+			? charactersArray.filter((c) => c.novelId === filters.novelId)
+			: charactersArray;
+	});
+}
 
 export default defineBackground(() => {
 	browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-		console.log("mesage:", message);
 		switch (message.action) {
-			case "GET_STORE": {
-				store.getValue().then(sendResponse);
+			case BACKGROUND_ACTIONS.GET_CHARACTERS: {
+				getCharacters({ ...message?.filters }).then(sendResponse);
 				break;
 			}
-			default: {
-				throw new Error(`${message.action} is invalid`);
+			case BACKGROUND_ACTIONS.ADD_CHARACTER: {
+				addCharacter(message.data).then(sendResponse);
+				break;
 			}
+			default:
+				console.error(`Unknown action: ${message.action}`);
 		}
 
 		return true;
@@ -25,36 +47,19 @@ export default defineBackground(() => {
 	});
 
 	browser.contextMenus.onClicked.addListener(async (info, tab) => {
-		if (tab?.id === undefined) {
-			throw Error(`Could not get tab ID for ${info}`);
-		}
-
-		const characterName = info.selectionText?.trim();
-
-		const storeValue = await store.getValue();
-		if (storeValue.some((c) => c.name === characterName)) {
-			await browser.tabs.sendMessage(tab.id, {
-				action: "ALERT",
-				data: `${characterName} already exists!`,
-			});
-			return;
-		}
-
+		if (!tab?.id || !info.selectionText) return;
+		const name = info.selectionText.trim();
 		const context = await browser.tabs.sendMessage(tab.id, {
-			action: "PROMPT",
+			action: CONTENT_ACTIONS.PROMPT,
 		});
 
-		store.setValue([
-			...storeValue,
-			{
-				name: characterName!,
-				context,
-			},
-		]);
+		// hardcode
+		const novelId = "novel-1";
+		await addCharacter({ name, context, novelId });
 
 		await browser.tabs.sendMessage(tab.id, {
-			action: "ALERT",
-			data: "success",
+			action: CONTENT_ACTIONS.TOAST,
+			data: `Added ${name}!`,
 		});
 	});
 });
