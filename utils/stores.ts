@@ -1,3 +1,5 @@
+import { BACKGROUND_ACTIONS } from "@/utils/actions";
+
 export interface Novel {
 	id: string;
 	title: string;
@@ -21,25 +23,23 @@ export interface Relationship {
 	notes?: string;
 }
 
-export const novelsStore = storage.defineItem<Record<string, Novel>>(
-	"local:novels",
-	{
-		fallback: {},
-	},
-);
+// export const novelsStore = storage.defineItem<Novel[]>("local:novels", {
+// 	fallback: [],
+// });
 
-export const relationshipsStore = storage.defineItem<
-	Record<string, Relationship>
->("local:relationships", {
-	fallback: {},
-});
+// export const relationshipsStore = storage.defineItem<Relationship[]>(
+// 	"local:relationships",
+// 	{
+// 		fallback: [],
+// 	},
+// );
 
 function createStorageStore<
 	TValue,
 	TAction extends { type: string },
 	TMetadata extends Record<string, unknown> = {},
 >(
-	storage: WxtStorageItem<TValue | null, TMetadata>,
+	storage: WxtStorageItem<TValue, TMetadata>,
 	reducer: (value: TValue, action: TAction) => TValue,
 ) {
 	async function dispatch(action: TAction): Promise<TValue> {
@@ -52,17 +52,28 @@ function createStorageStore<
 		return nextState;
 	}
 
+	function getState(): Promise<TValue> {
+		return storage.getValue();
+	}
+
+	async function select<TResult>(selector: (state: TValue) => TResult) {
+		const state = await storage.getValue();
+		return selector(state);
+	}
+
 	return {
 		dispatch,
+		getState,
+		select,
 	};
 }
 
 export const charactersStore = createStorageStore(
-	storage.defineItem<Record<string, Character>>("local:characters", {
-		fallback: {},
+	storage.defineItem<Character[]>("local:characters", {
+		fallback: [],
 	}),
 	(
-		state: Record<string, Character>,
+		characters: Character[],
 		action:
 			| {
 					type: typeof BACKGROUND_ACTIONS.ADD_CHARACTER;
@@ -70,45 +81,60 @@ export const charactersStore = createStorageStore(
 			  }
 			| {
 					type: typeof BACKGROUND_ACTIONS.UPDATE_CHARACTER;
-					payload: Partial<Omit<Character, "id">> & Pick<Character, "id">;
+					payload: Character;
 			  }
 			| {
-					type: typeof BACKGROUND_ACTIONS.GET_CHARACTERS;
-					payload: { novelId: string | null };
+					type: typeof BACKGROUND_ACTIONS.REMOVE_CHARACTER;
+					payload: {
+						id: Character["id"];
+					};
 			  },
-	): Record<string, Character> => {
+	): Character[] => {
 		switch (action.type) {
 			case BACKGROUND_ACTIONS.ADD_CHARACTER: {
 				const id = crypto.randomUUID();
-				return {
-					...state,
-					[id]: { id, ...action.payload },
-				};
+				return [
+					...characters,
+					{
+						...action.payload,
+						id,
+					},
+				];
 			}
 			case BACKGROUND_ACTIONS.UPDATE_CHARACTER: {
-				return {
-					...state,
-					[action.payload.id]: {
-						...state[action.payload.id],
-						...action.payload,
-					},
-				};
+				return characters.map((c) =>
+					c.id === action.payload.id
+						? {
+								...action.payload,
+						  }
+						: c,
+				);
 			}
-			case BACKGROUND_ACTIONS.GET_CHARACTERS: {
-				const charactersArray = Object.values(state);
-				return action.payload.novelId !== null
-					? charactersArray.reduce((acc: Record<string, Character>, c) => {
-							if (c.novelId === action.payload.novelId) {
-								acc[c.id] = c;
-							}
-
-							return acc;
-					  }, {})
-					: state;
+			case BACKGROUND_ACTIONS.REMOVE_CHARACTER: {
+				return characters.filter((c) => c.id !== action.payload.id);
 			}
 			default: {
 				throw new Error("invalid type");
 			}
+		}
+	},
+);
+
+export const currentNovelIdStore = createStorageStore(
+	storage.defineItem<string>("local:currentNovel", { fallback: "" }),
+	(
+		_currentNovel: string,
+		action: {
+			type: typeof BACKGROUND_ACTIONS.SET_CURRENT_NOVEL;
+			payload: string;
+		},
+	): string => {
+		switch (action.type) {
+			case BACKGROUND_ACTIONS.SET_CURRENT_NOVEL: {
+				return action.payload;
+			}
+			default:
+				throw new Error("invalid type");
 		}
 	},
 );

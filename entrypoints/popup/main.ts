@@ -12,7 +12,7 @@ const characters = await sendMessage(
 );
 console.log("from popup", characters);
 
-for (const char of Object.values(characters)) {
+for (const char of characters) {
 	const li = document.createElement("li");
 	li.textContent = `${char.name}: ${char.context}`;
 	charactersContainer.append(li);

@@ -1,33 +1,47 @@
-import { BACKGROUND_ACTIONS } from "@/utils/actions";
-import { charactersStore } from "@/utils/stores";
+import { BACKGROUND_ACTIONS, CONTENT_ACTIONS } from "@/utils/actions";
+import { charactersStore, currentNovelIdStore } from "@/utils/stores";
 import { onMessage, sendMessage } from "webext-bridge/background";
 
 export default defineBackground(() => {
-	onMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, ({ data: { novelId } }) => {
-		return charactersStore.dispatch({
-			type: BACKGROUND_ACTIONS.GET_CHARACTERS,
-			payload: {
-				novelId: novelId ?? null,
-			},
-		});
-	});
-	onMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, ({ data }) => {
-		return charactersStore.dispatch({
-			type: BACKGROUND_ACTIONS.ADD_CHARACTER,
-			payload: data,
-		});
+	onMessage(
+		BACKGROUND_ACTIONS.GET_CHARACTERS,
+		async ({ data: { novelId } }) => {
+			try {
+				return await charactersStore.select((characters) =>
+					novelId !== null
+						? characters.filter((c) => c.novelId === novelId)
+						: characters,
+				);
+			} catch (err) {
+				console.error("GET_CHARACTERS failed:", err);
+				throw err;
+			}
+		},
+	);
+
+	onMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, async ({ data }) => {
+		try {
+			return await charactersStore.dispatch({
+				type: BACKGROUND_ACTIONS.ADD_CHARACTER,
+				payload: data,
+			});
+		} catch (err) {
+			console.error("ADD_CHARACTER failed:", err);
+			throw err;
+		}
 	});
 
 	browser.runtime.onInstalled.addListener(() => {
 		browser.contextMenus.create({
-			title: "selected",
+			id: "character-selection",
+			title: "Add Character",
 			contexts: ["selection"],
-			id: "selection",
 		});
 	});
 
 	browser.contextMenus.onClicked.addListener(async (info, tab) => {
 		if (!tab?.id || !info.selectionText) return;
+
 		const name = info.selectionText.trim();
 		const context = await sendMessage(
 			CONTENT_ACTIONS.PROMPT,
@@ -35,13 +49,16 @@ export default defineBackground(() => {
 			`content-script@${tab.id}`,
 		);
 
-		if (!context) throw new Error("context cannot be empty");
+		if (!context) {
+			console.warn("context cannot be empty");
+			return;
+		}
 
-		// hardcode
-		const novelId = "novel-1";
-		charactersStore.dispatch({
+		const currentNovelId = await currentNovelIdStore.getState();
+
+		await charactersStore.dispatch({
 			type: BACKGROUND_ACTIONS.ADD_CHARACTER,
-			payload: { name, context, novelId },
+			payload: { name, context, novelId: currentNovelId },
 		});
 
 		await sendMessage(
