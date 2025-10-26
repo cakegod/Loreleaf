@@ -65,6 +65,7 @@ function createStorageStore<
 		dispatch,
 		getState,
 		select,
+		subscribe: storage.watch,
 	};
 }
 

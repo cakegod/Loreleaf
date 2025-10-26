@@ -37,6 +37,14 @@ export default defineBackground(() => {
 	});
 
 	browser.runtime.onInstalled.addListener(() => {
+		charactersStore.subscribe(async (characters) => {
+			const [tab] = await browser.tabs.query({});
+			sendMessage(
+				CONTENT_ACTIONS.CHARACTERS_CHANGED,
+				characters,
+				`content-script@${tab.id}`,
+			);
+		});
 		browser.contextMenus.create({
 			id: "character-selection",
 			title: "Add Character",

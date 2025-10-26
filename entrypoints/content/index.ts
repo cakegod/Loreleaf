@@ -27,6 +27,9 @@ export default defineContentScript({
 	matches: ["<all_urls>"],
 	main(ctx) {
 		const marker = new Mark(document.body);
+		onMessage(CONTENT_ACTIONS.CHARACTERS_CHANGED, ({ data: characters }) => {
+			markCharacters(characters, marker);
+		});
 		onMessage(CONTENT_ACTIONS.PROMPT, () => {
 			return prompt("context");
 		});
