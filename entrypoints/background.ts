@@ -5,12 +5,17 @@ import { onMessage, sendMessage } from "webext-bridge/background";
 export default defineBackground(() => {
 	onMessage(
 		BACKGROUND_ACTIONS.GET_CHARACTERS,
-		async ({ data: { novelId } }) => {
+		async ({ data: { currentNovelOnly = true } }) => {
 			try {
+				const characters = await charactersStore.getState();
+
+				if (!currentNovelOnly) {
+					return characters;
+				}
+
+				const currentNovelId = await currentNovelIdStore.getState();
 				return await charactersStore.select((characters) =>
-					novelId !== null
-						? characters.filter((c) => c.novelId === novelId)
-						: characters,
+					characters.filter((c) => c.novelId === currentNovelId),
 				);
 			} catch (err) {
 				console.error("GET_CHARACTERS failed:", err);

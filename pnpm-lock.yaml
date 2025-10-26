@@ -11,10 +11,19 @@ importers:
 
   .:
     dependencies:
+      tippy.js:
+        specifier: ^6.3.7
+        version: 6.3.7
       webext-bridge:
         specifier: ^6.0.1
         version: 6.0.1
     devDependencies:
+      '@types/mark.js':
+        specifier: ^8.11.12
+        version: 8.11.12
+      mark.js:
+        specifier: ^8.11.1
+        version: 8.11.1
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -279,6 +288,9 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
+  '@popperjs/core@2.11.8':
+    resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
+
   '@rollup/rollup-android-arm-eabi@4.52.5':
     resolution: {integrity: sha512-8c1vW4ocv3UOMp9K+gToY5zL2XiiVw3k7f1ksf4yO1FlDFQ1C2u72iACFnSOceJFsWskc2WZNqeRhFRPzv+wtQ==}
     cpu: [arm]
@@ -401,11 +413,20 @@ packages:
   '@types/har-format@1.2.16':
     resolution: {integrity: sha512-fluxdy7ryD3MV6h8pTfTYpy/xQzCFC7m89nOH9y94cNqJ1mDIDPut7MnRHI3F6qRmh/cT2fUjG1MLdCNb4hE9A==}
 
+  '@types/jquery@3.5.33':
+    resolution: {integrity: sha512-SeyVJXlCZpEki5F0ghuYe+L+PprQta6nRZqhONt9F13dWBtR/ftoaIbdRQ7cis7womE+X2LKhsDdDtkkDhJS6g==}
+
+  '@types/mark.js@8.11.12':
+    resolution: {integrity: sha512-244ZnaIBpz4c6xutliAnYVZp6xJlmC569jZqnR3ElO1Y01ooYASSVQEqpd2x0A2UfrgVMs5V9/9tUAdZaDMytQ==}
+
   '@types/minimatch@3.0.5':
     resolution: {integrity: sha512-Klz949h02Gz2uZCMGwDUSDS1YBlTdDDgbWHi+81l29tQALUtvz4rAYi5uoVhE5Lagoq6DeqAUlbrHvW/mXDgdQ==}
 
   '@types/node@24.9.1':
     resolution: {integrity: sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==}
+
+  '@types/sizzle@2.3.10':
+    resolution: {integrity: sha512-TC0dmN0K8YcWEAEfiPi5gJP14eJe30TTGjkvek3iM/1NdHHsdCA/Td6GvNndMOo/iSnIsZ4HuuhrYPDAmbxzww==}
 
   '@types/webextension-polyfill@0.8.3':
     resolution: {integrity: sha512-GN+Hjzy9mXjWoXKmaicTegv3FJ0WFZ3aYz77Wk8TMp1IY3vEzvzj1vnsa0ggV7vMI1i+PUxe4qqnIJKCzf9aTg==}
@@ -1147,6 +1168,9 @@ packages:
   many-keys-map@2.0.1:
     resolution: {integrity: sha512-DHnZAD4phTbZ+qnJdjoNEVU1NecYoSdbOOoVmTDH46AuxDkEVh3MxTVpXq10GtcTC6mndN9dkv1rNfpjRcLnOw==}
 
+  mark.js@8.11.1:
+    resolution: {integrity: sha512-1I+1qpDt4idfgLQG+BNWmrqku+7/2bi5nLf4YwF8y8zXvmfiTBY3PV3ZibfrjBueCByROpuBjLLFCajqkgYoLQ==}
+
   marky@1.3.0:
     resolution: {integrity: sha512-ocnPZQLNpvbedwTy9kNrQEsknEfgvcLMvOtz3sFeWApDq1MXH1TqkCIx58xlpESsfwQOnuBO9beyQuNGzVvuhQ==}
 
@@ -1587,6 +1611,9 @@ packages:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
 
+  tippy.js@6.3.7:
+    resolution: {integrity: sha512-E1d3oP2emgJ9dRQZdf3Kkn0qJgI6ZLpyS5z6ZkY1DF3kaQaBsGZsndEpHwx+eC+tYM41HaSNvNtLx8tU57FzTQ==}
+
   tmp@0.2.5:
     resolution: {integrity: sha512-voyz6MApa1rQGUxT3E+BK7/ROe8itEx7vD8/HEvt4xwXucvQ5G5oeEiHkmHZJuBO21RpOf+YYm9MOivj709jow==}
     engines: {node: '>=14.14'}
@@ -1981,6 +2008,8 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
+  '@popperjs/core@2.11.8': {}
+
   '@rollup/rollup-android-arm-eabi@4.52.5':
     optional: true
 
@@ -2057,11 +2086,21 @@ snapshots:
 
   '@types/har-format@1.2.16': {}
 
+  '@types/jquery@3.5.33':
+    dependencies:
+      '@types/sizzle': 2.3.10
+
+  '@types/mark.js@8.11.12':
+    dependencies:
+      '@types/jquery': 3.5.33
+
   '@types/minimatch@3.0.5': {}
 
   '@types/node@24.9.1':
     dependencies:
       undici-types: 7.16.0
+
+  '@types/sizzle@2.3.10': {}
 
   '@types/webextension-polyfill@0.8.3': {}
 
@@ -2763,6 +2802,8 @@ snapshots:
 
   many-keys-map@2.0.1: {}
 
+  mark.js@8.11.1: {}
+
   marky@1.3.0: {}
 
   merge2@1.4.1: {}
@@ -3260,6 +3301,10 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
+
+  tippy.js@6.3.7:
+    dependencies:
+      '@popperjs/core': 2.11.8
 
   tmp@0.2.5: {}
 

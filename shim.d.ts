@@ -3,7 +3,7 @@ import { ProtocolWithReturn } from "webext-bridge";
 declare module "webext-bridge" {
 	export interface ProtocolMap {
 		[BACKGROUND_ACTIONS.GET_CHARACTERS]: ProtocolWithReturn<
-			{ novelId?: string },
+			{ novelId?: string, currentNovelOnly?: boolean },
 			Character[]
 		>;
 		[BACKGROUND_ACTIONS.ADD_CHARACTER]: ProtocolWithReturn<
