@@ -1,4 +1,52 @@
 .highlight {
 	text-decoration: dotted underline;
 	text-underline-offset: 3px;
+	text-decoration-color: whitesmoke;
+	transition: 200ms;
 }
+
+.highlight:hover {
+	text-decoration-color: deepskyblue;
+	transition: 200ms;
+}
+
+.tippy-content {
+	display: flex;
+	flex-direction: column;
+	background-color: black;
+	font-size: 1rem;
+}
+
+.tippy-arrow {
+	color: black !important;
+}
+
+.tippy-content:has(.tippy-content__btn) {
+	padding: 0.3rem 0;
+	border-radius: 4px;
+}
+
+.tippy-content__btn {
+	padding: 0.35rem 0.7rem;
+	width: 100px;
+	gap: 0.25rem;
+	display: flex;
+	text-align: left;
+	align-items: center;
+	background-color: black;
+	color: white;
+	border-width: 0;
+}
+
+.tippy-content__btn:hover {
+	background-color: rgb(37, 37, 37);
+	border-radius: 4px;
+}
+
+/* .tippy-content__btn--edit {
+	color: #2196f3;
+}
+
+.tippy-content__btn--remove {
+	color: #f44336;
+} */

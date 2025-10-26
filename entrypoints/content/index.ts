@@ -6,6 +6,8 @@ import "./style.css";
 import "tippy.js/dist/tippy.css";
 import { Character } from "@/utils/stores";
 
+const html = String.raw;
+
 function markCharacters(characters: Character[], marker: Mark) {
 	const charactersName = characters.map((c) => c.name);
 	marker.mark(charactersName, {
@@ -18,6 +20,21 @@ function markCharacters(characters: Character[], marker: Mark) {
 					const character = characters.find((c) => c.name === el.textContent)!;
 					return character.context;
 				},
+			});
+
+			tippy(el, {
+				touch: ["hold", 300],
+				trigger: "click",
+				allowHTML: true,
+				interactive: true,
+				placement: "bottom",
+				content: html`<button
+						class="tippy-content__btn tippy-content__btn--edit">
+						Edit
+					</button>
+					<button class="tippy-content__btn tippy-content__btn--remove">
+						Remove
+					</button>`,
 			});
 		},
 	});
@@ -43,7 +60,7 @@ export default defineContentScript({
 					markCharacters(characters, marker);
 				},
 			);
-		}, 0);
+		}, 500);
 
 		// SPAs don't reload the page, need to listen to location changes
 		ctx.addEventListener(window, "wxt:locationchange", ({ newUrl }) => {
