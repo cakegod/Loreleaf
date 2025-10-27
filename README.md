@@ -1,6 +1,6 @@
-# Character Tracker
+# LoreLeaf
 
-A cross-browser extension to track characters in web novels.
+A very early WIP cross-browser extension to collect and recall characters context and their context.
 
 ## Features
 

@@ -1,6 +1,6 @@
 {
-  "name": "character_tracker",
-  "description": "manifest.json description",
+  "name": "loreleaf",
+  "description": "A playful cross-browser extension for tracking story lore.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
