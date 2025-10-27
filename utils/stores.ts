@@ -44,8 +44,8 @@ function createStorageStore<
 ) {
 	async function dispatch(action: TAction): Promise<TValue> {
 		const value = await storage.getValue();
-		if (!value) {
-			throw new Error("Storage value is null or undefined");
+		if (value === undefined) {
+			throw new Error("Storage value is undefined");
 		}
 		const nextState = reducer(value, action);
 		await storage.setValue(nextState);
