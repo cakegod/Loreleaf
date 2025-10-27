@@ -1,6 +1,6 @@
-# LoreLeaf
+# Loreleaf
 
-A very early WIP cross-browser extension to collect and recall characters context and their context.
+A very early WIP cross-browser extension to collect and recall characters and their context.
 
 ## Features
 
