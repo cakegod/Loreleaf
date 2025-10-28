@@ -2,13 +2,17 @@ import { BACKGROUND_ACTIONS } from "@/utils/actions";
 import { sendMessage, onMessage } from "webext-bridge/content-script";
 import Mark from "mark.js";
 import tippy from "tippy.js";
-import "./style.css";
-import "tippy.js/dist/tippy.css";
+import pageStyle from "./page-style.css?inline";
+import "./shadow-style.css";
+
 import { Character } from "@/utils/stores";
 
 const html = String.raw;
 
-function showContextDialog(selectedText: string): Promise<string> {
+function showContextDialog(
+	selectedText: string,
+	container: HTMLElement,
+): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const dialog = document.createElement("dialog");
 		dialog.className = "context-modal";
@@ -83,19 +87,25 @@ function showContextDialog(selectedText: string): Promise<string> {
 			submitBtn.disabled = !context.value.trim();
 		});
 
-		document.body.append(dialog);
+		container.append(dialog);
 		dialog.showModal();
 	});
 }
 
-function markCharacters(characters: Character[], marker: Mark) {
+function markCharacters(
+	characters: Character[],
+	marker: Mark,
+	container: HTMLElement,
+) {
 	const charactersName = characters.map((c) => c.name);
 	marker.mark(charactersName, {
 		separateWordSearch: false,
 		className: "highlight",
 		element: "span",
 		each(el: HTMLSpanElement) {
+			// The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
 			tippy(el, {
+				appendTo: container,
 				content: () => {
 					const character = characters.find((c) => c.name === el.textContent)!;
 					return character.context;
@@ -108,6 +118,7 @@ function markCharacters(characters: Character[], marker: Mark) {
 				allowHTML: true,
 				interactive: true,
 				placement: "bottom",
+				appendTo: container,
 				content: html`<button
 						class="tippy-content__btn tippy-content__btn--edit">
 						Edit
@@ -122,34 +133,53 @@ function markCharacters(characters: Character[], marker: Mark) {
 
 export default defineContentScript({
 	matches: ["<all_urls>"],
+	cssInjectionMode: "ui",
 	async main(ctx) {
-		const marker = new Mark(document.body);
-		onMessage(CONTENT_ACTIONS.CHARACTERS_CHANGED, ({ data: characters }) => {
-			markCharacters(characters, marker);
-		});
-		onMessage(CONTENT_ACTIONS.PROMPT, ({ data: selectedText }) => {
-			return showContextDialog(selectedText);
-		});
-		onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => alert(data));
+		// append non shadowed page styles
+		const style = document.createElement("style");
+		style.innerHTML = pageStyle;
+		document.head.append(style);
 
-		// initial mark
-		// Hacky solution, since sometimes the marking is performed before the page is fully loaded
-		ctx.setTimeout(() => {
-			sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
-				(characters) => {
-					markCharacters(characters, marker);
-				},
-			);
-		}, 500);
+		const ui = await createShadowRootUi(ctx, {
+			name: "content-script",
+			position: "inline",
+			onMount(container) {
+				onMessage(CONTENT_ACTIONS.PROMPT, ({ data: selectedText }) => {
+					return showContextDialog(selectedText, container);
+				});
 
-		// SPAs don't reload the page, need to listen to location changes
-		ctx.addEventListener(window, "wxt:locationchange", ({ newUrl }) => {
-			sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
-				// TODO: only match specific URL?
-				(characters) => {
-					markCharacters(characters, marker);
-				},
-			);
+				const marker = new Mark(document.body);
+				onMessage(
+					CONTENT_ACTIONS.CHARACTERS_CHANGED,
+					({ data: characters }) => {
+						markCharacters(characters, marker, container);
+					},
+				);
+
+				onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => alert(data));
+
+				// initial mark
+				// Hacky solution, since sometimes the marking is performed before the page is fully loaded
+				ctx.setTimeout(() => {
+					sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
+						(characters) => {
+							markCharacters(characters, marker, container);
+						},
+					);
+				}, 500);
+
+				// SPAs don't reload the page, need to listen to location changes
+				ctx.addEventListener(window, "wxt:locationchange", ({ newUrl }) => {
+					sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
+						// TODO: only match specific URL?
+						(characters) => {
+							markCharacters(characters, marker, container);
+						},
+					);
+				});
+			},
 		});
+
+		ui.mount();
 	},
 });

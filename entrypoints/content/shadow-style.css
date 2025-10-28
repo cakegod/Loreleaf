@@ -1,13 +1,7 @@
-.highlight {
-	text-decoration: dotted underline;
-	text-underline-offset: 3px;
-	text-decoration-color: whitesmoke;
-	transition: 200ms;
-}
+@import "tippy.js/dist/tippy.css";
 
-.highlight:hover {
-	text-decoration-color: deepskyblue;
-	transition: 200ms;
+* {
+	font-family: sans-serif;
 }
 
 .tippy-content {
