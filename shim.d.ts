@@ -10,7 +10,7 @@ declare module "webext-bridge" {
 			Character,
 			Character[]
 		>;
-		[CONTENT_ACTIONS.PROMPT]: ProtocolWithReturn<null, string | null>;
+		[CONTENT_ACTIONS.PROMPT]: ProtocolWithReturn<string, string | null>;
 		[CONTENT_ACTIONS.TOAST]: string;
 		[CONTENT_ACTIONS.CHARACTERS_CHANGED]: Character[];
 	}

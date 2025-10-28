@@ -54,30 +54,48 @@ export default defineBackground(() => {
 
 	browser.contextMenus.onClicked.addListener(async (info, tab) => {
 		if (!tab?.id || !info.selectionText) return;
-
 		const name = info.selectionText.trim();
-		const context = await sendMessage(
-			CONTENT_ACTIONS.PROMPT,
-			null,
-			`content-script@${tab.id}`,
-		);
 
-		if (!context) {
-			console.warn("context cannot be empty");
-			return;
+		try {
+			const context = await sendMessage(
+				CONTENT_ACTIONS.PROMPT,
+				info.selectionText,
+				`content-script@${tab.id}`,
+			);
+
+			if (!context) {
+				console.warn("context cannot be empty");
+				return;
+			}
+
+			const currentNovelId = await currentNovelIdStore.getState();
+
+			await charactersStore.dispatch({
+				type: BACKGROUND_ACTIONS.ADD_CHARACTER,
+				payload: { name, context, novelId: currentNovelId },
+			});
+
+			const newCharacter = await charactersStore.select(
+				(characters) =>
+					characters.find(
+						(c) => c.name === name && currentNovelId === c.novelId,
+					)!,
+			);
+
+			await sendMessage(
+				CONTENT_ACTIONS.TOAST,
+				`Added ${newCharacter.name} with "${newCharacter.context}"!`,
+				`content-script@${tab.id}`,
+			);
+		} catch (error) {
+			console.error(error);
+
+			if (error instanceof Error)
+				await sendMessage(
+					CONTENT_ACTIONS.TOAST,
+					error.message,
+					`content-script@${tab.id}`,
+				);
 		}
-
-		const currentNovelId = await currentNovelIdStore.getState();
-
-		await charactersStore.dispatch({
-			type: BACKGROUND_ACTIONS.ADD_CHARACTER,
-			payload: { name, context, novelId: currentNovelId },
-		});
-
-		await sendMessage(
-			CONTENT_ACTIONS.TOAST,
-			`Added ${name}!`,
-			`content-script@${tab.id}`,
-		);
 	});
 });
