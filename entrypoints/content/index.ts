@@ -106,6 +106,7 @@ function markCharacters(
 			// The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
 			tippy(el, {
 				appendTo: container,
+				placement: "top",
 				content: () => {
 					const character = characters.find((c) => c.name === el.textContent)!;
 					return character.context;
@@ -169,7 +170,7 @@ export default defineContentScript({
 				}, 500);
 
 				// SPAs don't reload the page, need to listen to location changes
-				ctx.addEventListener(window, "wxt:locationchange", ({ newUrl }) => {
+				ctx.addEventListener(window, "wxt:locationchange", () => {
 					sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
 						// TODO: only match specific URL?
 						(characters) => {

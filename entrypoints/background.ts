@@ -38,7 +38,10 @@ export default defineBackground(() => {
 
 	browser.runtime.onInstalled.addListener(() => {
 		charactersStore.subscribe(async (characters) => {
-			const [tab] = await browser.tabs.query({});
+			const [tab] = await browser.tabs.query({
+				active: true,
+				lastFocusedWindow: true,
+			});
 			sendMessage(
 				CONTENT_ACTIONS.CHARACTERS_CHANGED,
 				characters,
