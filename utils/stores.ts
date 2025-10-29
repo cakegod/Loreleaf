@@ -1,10 +1,8 @@
-import { BACKGROUND_ACTIONS } from "@/utils/actions";
-
 export interface Novel {
 	id: string;
 	title: string;
 	author?: string;
-	notes?: string;
+	description?: string;
 }
 
 export interface Character {
@@ -12,7 +10,7 @@ export interface Character {
 	name: string;
 	aliases?: string[];
 	novelId: string;
-	context: string;
+	note: string;
 }
 
 export interface Relationship {
@@ -20,122 +18,62 @@ export interface Relationship {
 	fromId: string;
 	toId: string;
 	type: string;
-	notes?: string;
+	description?: string;
 }
 
-// export const novelsStore = storage.defineItem<Novel[]>("local:novels", {
-// 	fallback: [],
-// });
-
-// export const relationshipsStore = storage.defineItem<Relationship[]>(
-// 	"local:relationships",
-// 	{
-// 		fallback: [],
-// 	},
-// );
-
-function createStorageStore<
-	TValue,
-	TAction extends { type: string },
-	TMetadata extends Record<string, unknown> = {},
->(
-	storage: WxtStorageItem<TValue, TMetadata>,
-	reducer: (value: TValue, action: TAction) => TValue,
-) {
-	async function dispatch(action: TAction): Promise<TValue> {
-		const value = await storage.getValue();
-		if (value === undefined) {
-			throw new Error("Storage value is undefined");
-		}
-		const nextState = reducer(value, action);
-		await storage.setValue(nextState);
-		return nextState;
-	}
-
-	function getState(): Promise<TValue> {
-		return storage.getValue();
-	}
-
-	async function select<TResult>(selector: (state: TValue) => TResult) {
-		const state = await storage.getValue();
-		return selector(state);
-	}
-
-	return {
-		dispatch,
-		getState,
-		select,
-		subscribe: storage.watch,
-	};
-}
-
-export const charactersStore = createStorageStore(
-	storage.defineItem<Character[]>("local:characters", {
+export const charactersStore = (() => {
+	const _storage = storage.defineItem<Character[]>("local:characters", {
 		fallback: [],
-	}),
-	(
-		characters: Character[],
-		action:
-			| {
-					type: typeof BACKGROUND_ACTIONS.ADD_CHARACTER;
-					payload: Omit<Character, "id">;
-			  }
-			| {
-					type: typeof BACKGROUND_ACTIONS.UPDATE_CHARACTER;
-					payload: Character;
-			  }
-			| {
-					type: typeof BACKGROUND_ACTIONS.REMOVE_CHARACTER;
-					payload: {
-						id: Character["id"];
-					};
-			  },
-	): Character[] => {
-		switch (action.type) {
-			case BACKGROUND_ACTIONS.ADD_CHARACTER: {
-				const id = crypto.randomUUID();
-				return [
-					...characters,
-					{
-						...action.payload,
-						id,
-					},
-				];
-			}
-			case BACKGROUND_ACTIONS.UPDATE_CHARACTER: {
-				return characters.map((c) =>
-					c.id === action.payload.id
-						? {
-								...action.payload,
-						  }
-						: c,
-				);
-			}
-			case BACKGROUND_ACTIONS.REMOVE_CHARACTER: {
-				return characters.filter((c) => c.id !== action.payload.id);
-			}
-			default: {
-				throw new Error("invalid type");
-			}
-		}
-	},
-);
+	});
 
-export const currentNovelIdStore = createStorageStore(
-	storage.defineItem<string>("local:currentNovel", { fallback: "" }),
-	(
-		_currentNovel: string,
-		action: {
-			type: typeof BACKGROUND_ACTIONS.SET_CURRENT_NOVEL;
-			payload: string;
-		},
-	): string => {
-		switch (action.type) {
-			case BACKGROUND_ACTIONS.SET_CURRENT_NOVEL: {
-				return action.payload;
-			}
-			default:
-				throw new Error("invalid type");
-		}
-	},
-);
+	async function get(): Promise<Character[]> {
+		return _storage.getValue();
+	}
+
+	async function create(data: Omit<Character, "id">): Promise<Character> {
+		const newCharacter = { ...data, id: crypto.randomUUID() };
+		const characters = await _storage.getValue();
+		await _storage.setValue([...characters, newCharacter]);
+		return newCharacter;
+	}
+
+	async function update(
+		id: Character["id"],
+		data: Character,
+	): Promise<Character[]> {
+		const characters = await _storage.getValue();
+		await _storage.setValue(characters.map((c) => (c.id === id ? data : c)));
+		return characters;
+	}
+
+	async function remove(id: Character["id"]): Promise<Character[]> {
+		const characters = await _storage.getValue();
+		const newCharacters = characters.filter((c) => c.id !== id);
+		await _storage.setValue(newCharacters);
+		return newCharacters;
+	}
+
+	async function select<R>(selector: (storageValue: Character[]) => R) {
+		const storageValue = await _storage.getValue();
+		return selector(storageValue);
+	}
+
+	return { get, create, update, remove, select, subscribe: _storage.watch };
+})();
+
+export const currentNovelIdStore = (() => {
+	const _storage = storage.defineItem<Novel["id"]>("local:currentNovel", {
+		fallback: "",
+	});
+
+	function get() {
+		return _storage.getValue();
+	}
+
+	async function set(value: Novel["id"]) {
+		await _storage.setValue(value);
+		return get();
+	}
+
+	return { subscribe: _storage.watch, get, set };
+})();
