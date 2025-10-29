@@ -1,4 +1,4 @@
-import { BACKGROUND_ACTIONS } from "@/utils/actions";
+import { BACKGROUND_ACTIONS, CONTENT_ACTIONS } from "@/utils/actions";
 import { sendMessage, onMessage } from "webext-bridge/content-script";
 import Mark from "mark.js";
 import tippy from "tippy.js";
@@ -6,91 +6,9 @@ import pageStyle from "./page-style.css?inline";
 import "./shadow-style.css";
 
 import { Character } from "@/utils/stores";
+import { showContextDialog } from "./context-dialog";
 
 const html = String.raw;
-
-function showContextDialog(
-	selectedText: string,
-	container: HTMLElement,
-): Promise<string> {
-	return new Promise((resolve, reject) => {
-		const dialog = document.createElement("dialog");
-		dialog.className = "context-modal";
-		dialog.innerHTML = html`
-			<form class="context-modal__form" method="dialog">
-				<h2 class="context-modal__title">Add context to "${selectedText}"</h2>
-				<div class="context-modal__field">
-					<label class="context-modal__label" for="context-input">
-						Context
-					</label>
-					<textarea
-						class="context-modal__textarea"
-						name="context"
-						id="context-input"
-						rows="6"
-						required>
-					</textarea>
-				</div>
-				<div class="context-modal__actions">
-					<button
-						name="cancel"
-						type="button"
-						class="context-modal__btn context-modal__btn--secondary">
-						Cancel
-					</button>
-					<button
-						name="submit"
-						type="submit"
-						class="context-modal__btn context-modal__btn--primary"
-						disabled>
-						Save
-					</button>
-				</div>
-			</form>
-		`;
-
-		const form = dialog.querySelector("form")!;
-		const formElements = form.elements as HTMLFormControlsCollection & {
-			context: HTMLTextAreaElement;
-			submit: HTMLButtonElement;
-			cancel: HTMLButtonElement;
-		};
-		const context = formElements.context;
-		const submitBtn = formElements.submit;
-		const cancelBtn = formElements.cancel!;
-
-		const cleanup = () => {
-			dialog.close();
-			dialog.remove();
-		};
-
-		form.addEventListener("submit", (e) => {
-			e.preventDefault();
-			const value = context.value.trim();
-			if (!value) return context.focus();
-			resolve(value);
-			cleanup();
-		});
-
-		cancelBtn.addEventListener("click", () => {
-			reject(new Error("cancelled"));
-			cleanup();
-		});
-
-		dialog.addEventListener("cancel", (e) => {
-			e.preventDefault();
-			reject(new Error("cancelled"));
-			cleanup();
-		});
-
-		context.addEventListener("input", () => {
-			submitBtn.disabled = !context.value.trim();
-		});
-
-		container.append(dialog);
-		dialog.showModal();
-	});
-}
 
 function markCharacters(
 	characters: Character[],
@@ -98,6 +16,7 @@ function markCharacters(
 	container: HTMLElement,
 ) {
 	const charactersName = characters.map((c) => c.name);
+	const charMap = new Map(characters.map((c) => [c.name, c]));
 	marker.unmark({
 		done() {
 			marker.mark(charactersName, {
@@ -106,14 +25,13 @@ function markCharacters(
 				element: "span",
 				each(el: HTMLSpanElement) {
 					// The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
+					// TODO: this might perform poorly
 					tippy(el, {
 						appendTo: container,
 						placement: "top",
 						content: () => {
-							const character = characters.find(
-								(c) => c.name === el.textContent,
-							)!;
-							return character.context;
+							const character = charMap.get(el.textContent)!;
+							return character.note;
 						},
 					});
 
@@ -138,48 +56,63 @@ function markCharacters(
 	});
 }
 
+function appendPageStyles() {
+	const style = document.createElement("style");
+	style.innerHTML = pageStyle;
+	document.head.append(style);
+}
+
+function registerMessageListeners(marker: Mark, container: HTMLElement) {
+	onMessage(CONTENT_ACTIONS.PROMPT, async ({ data: selectedText }) => {
+		try {
+			const userInput = await showContextDialog(selectedText, container);
+			return userInput;
+		} catch (error) {
+			if (error instanceof Error) {
+				alert(error.message);
+			}
+			throw error;
+		}
+	});
+
+	onMessage(CONTENT_ACTIONS.CHARACTERS_CHANGED, ({ data: characters }) => {
+		markCharacters(characters, marker, container);
+	});
+
+	onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => alert(data));
+}
+
 export default defineContentScript({
 	matches: ["<all_urls>"],
 	cssInjectionMode: "ui",
 	async main(ctx) {
-		// append non shadowed page styles
-		const style = document.createElement("style");
-		style.innerHTML = pageStyle;
-		document.head.append(style);
+		appendPageStyles();
 
 		const ui = await createShadowRootUi(ctx, {
 			name: "content-script",
 			position: "inline",
-			onMount(container) {
-				onMessage(CONTENT_ACTIONS.PROMPT, ({ data: selectedText }) => {
-					return showContextDialog(selectedText, container);
-				});
-
+			async onMount(container) {
 				const marker = new Mark(document.body);
-				onMessage(
-					CONTENT_ACTIONS.CHARACTERS_CHANGED,
-					({ data: characters }) => {
-						markCharacters(characters, marker, container);
-					},
-				);
-
-				onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => alert(data));
+				registerMessageListeners(marker, container);
 
 				// initial mark
-				sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
-					(characters) => {
-						markCharacters(characters, marker, container);
-					},
+				const characters = await sendMessage(
+					BACKGROUND_ACTIONS.GET_CHARACTERS,
+					{},
+					"background",
 				);
+				markCharacters(characters, marker, container);
 
-				// SPAs don't reload the page, need to listen to location changes
-				ctx.addEventListener(window, "wxt:locationchange", () => {
-					sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
-						// TODO: only match specific URL?
-						(characters) => {
-							markCharacters(characters, marker, container);
-						},
+				// SPAs change URLs without reloading the page.
+				// The 'wxt:locationchange' event is dispatched by the extension to detect such navigation,
+				// so we can update highlights when the URL changes.
+				ctx.addEventListener(window, "wxt:locationchange", async () => {
+					const characters = await sendMessage(
+						BACKGROUND_ACTIONS.GET_CHARACTERS,
+						{},
+						"background",
 					);
+					markCharacters(characters, marker, container);
 				});
 			},
 		});

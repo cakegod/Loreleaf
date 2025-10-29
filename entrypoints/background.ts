@@ -7,16 +7,15 @@ export default defineBackground(() => {
 		BACKGROUND_ACTIONS.GET_CHARACTERS,
 		async ({ data: { currentNovelOnly = true } }) => {
 			try {
-				const characters = await charactersStore.getState();
-
 				if (!currentNovelOnly) {
-					return characters;
+					return charactersStore.get();
 				}
 
-				const currentNovelId = await currentNovelIdStore.getState();
-				return await charactersStore.select((characters) =>
-					characters.filter((c) => c.novelId === currentNovelId),
+				const currentNovelId = await currentNovelIdStore.get();
+				const characters = await charactersStore.select((cs) =>
+					cs.filter((c) => c.novelId === currentNovelId),
 				);
+				return characters;
 			} catch (err) {
 				console.error("GET_CHARACTERS failed:", err);
 				throw err;
@@ -26,10 +25,7 @@ export default defineBackground(() => {
 
 	onMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, async ({ data }) => {
 		try {
-			return await charactersStore.dispatch({
-				type: BACKGROUND_ACTIONS.ADD_CHARACTER,
-				payload: data,
-			});
+			return await charactersStore.create(data);
 		} catch (err) {
 			console.error("ADD_CHARACTER failed:", err);
 			throw err;
@@ -57,48 +53,24 @@ export default defineBackground(() => {
 
 	browser.contextMenus.onClicked.addListener(async (info, tab) => {
 		if (!tab?.id || !info.selectionText) return;
+
 		const name = info.selectionText.trim();
+		const note = await sendMessage(
+			CONTENT_ACTIONS.PROMPT,
+			info.selectionText,
+			`content-script@${tab.id}`,
+		);
+		const currentNovelId = await currentNovelIdStore.get();
+		const newCharacter = await charactersStore.create({
+			name,
+			note,
+			novelId: currentNovelId,
+		});
 
-		try {
-			const context = await sendMessage(
-				CONTENT_ACTIONS.PROMPT,
-				info.selectionText,
-				`content-script@${tab.id}`,
-			);
-
-			if (!context) {
-				console.warn("context cannot be empty");
-				return;
-			}
-
-			const currentNovelId = await currentNovelIdStore.getState();
-
-			await charactersStore.dispatch({
-				type: BACKGROUND_ACTIONS.ADD_CHARACTER,
-				payload: { name, context, novelId: currentNovelId },
-			});
-
-			const newCharacter = await charactersStore.select(
-				(characters) =>
-					characters.find(
-						(c) => c.name === name && currentNovelId === c.novelId,
-					)!,
-			);
-
-			await sendMessage(
-				CONTENT_ACTIONS.TOAST,
-				`Added ${newCharacter.name} with "${newCharacter.context}"!`,
-				`content-script@${tab.id}`,
-			);
-		} catch (error) {
-			console.error(error);
-
-			if (error instanceof Error)
-				await sendMessage(
-					CONTENT_ACTIONS.TOAST,
-					error.message,
-					`content-script@${tab.id}`,
-				);
-		}
+		await sendMessage(
+			CONTENT_ACTIONS.TOAST,
+			`Added ${newCharacter.name} with "${newCharacter.note}"!`,
+			`content-script@${tab.id}`,
+		);
 	});
 });

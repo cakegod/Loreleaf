@@ -14,6 +14,6 @@ console.log("from popup", characters);
 
 for (const char of characters) {
 	const li = document.createElement("li");
-	li.textContent = `${char.name}: ${char.context}`;
+	li.textContent = `${char.name}: ${char.note}`;
 	charactersContainer.append(li);
 }
