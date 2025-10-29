@@ -98,35 +98,41 @@ function markCharacters(
 	container: HTMLElement,
 ) {
 	const charactersName = characters.map((c) => c.name);
-	marker.mark(charactersName, {
-		separateWordSearch: false,
-		className: "highlight",
-		element: "span",
-		each(el: HTMLSpanElement) {
-			// The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
-			tippy(el, {
-				appendTo: container,
-				placement: "top",
-				content: () => {
-					const character = characters.find((c) => c.name === el.textContent)!;
-					return character.context;
-				},
-			});
+	marker.unmark({
+		done() {
+			marker.mark(charactersName, {
+				separateWordSearch: false,
+				className: "highlight",
+				element: "span",
+				each(el: HTMLSpanElement) {
+					// The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
+					tippy(el, {
+						appendTo: container,
+						placement: "top",
+						content: () => {
+							const character = characters.find(
+								(c) => c.name === el.textContent,
+							)!;
+							return character.context;
+						},
+					});
 
-			tippy(el, {
-				touch: ["hold", 300],
-				trigger: "click",
-				allowHTML: true,
-				interactive: true,
-				placement: "bottom",
-				appendTo: container,
-				content: html`<button
-						class="tippy-content__btn tippy-content__btn--edit">
-						Edit
-					</button>
-					<button class="tippy-content__btn tippy-content__btn--remove">
-						Remove
-					</button>`,
+					tippy(el, {
+						touch: ["hold", 300],
+						trigger: "click",
+						allowHTML: true,
+						interactive: true,
+						placement: "bottom",
+						appendTo: container,
+						content: html`<button
+								class="tippy-content__btn tippy-content__btn--edit">
+								Edit
+							</button>
+							<button class="tippy-content__btn tippy-content__btn--remove">
+								Remove
+							</button>`,
+					});
+				},
 			});
 		},
 	});
@@ -160,14 +166,11 @@ export default defineContentScript({
 				onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => alert(data));
 
 				// initial mark
-				// Hacky solution, since sometimes the marking is performed before the page is fully loaded
-				ctx.setTimeout(() => {
-					sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
-						(characters) => {
-							markCharacters(characters, marker, container);
-						},
-					);
-				}, 500);
+				sendMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, {}, "background").then(
+					(characters) => {
+						markCharacters(characters, marker, container);
+					},
+				);
 
 				// SPAs don't reload the page, need to listen to location changes
 				ctx.addEventListener(window, "wxt:locationchange", () => {
