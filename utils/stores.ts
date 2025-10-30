@@ -30,8 +30,8 @@ export const charactersStore = (() => {
 		return _storage.getValue();
 	}
 
-	async function create(data: Omit<Character, "id">): Promise<Character> {
-		const newCharacter = { ...data, id: crypto.randomUUID() };
+	async function create(character: Omit<Character, "id">): Promise<Character> {
+		const newCharacter = { ...character, id: crypto.randomUUID() };
 		const characters = await _storage.getValue();
 		await _storage.setValue([...characters, newCharacter]);
 		return newCharacter;
@@ -39,10 +39,12 @@ export const charactersStore = (() => {
 
 	async function update(
 		id: Character["id"],
-		data: Character,
+		characterChanges: Omit<Partial<Character>, "id">,
 	): Promise<Character[]> {
 		const characters = await _storage.getValue();
-		await _storage.setValue(characters.map((c) => (c.id === id ? data : c)));
+		await _storage.setValue(
+			characters.map((c) => (c.id === id ? { ...c, ...characterChanges } : c)),
+		);
 		return characters;
 	}
 

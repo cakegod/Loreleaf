@@ -2,7 +2,33 @@ import { BACKGROUND_ACTIONS, CONTENT_ACTIONS } from "@/utils/actions";
 import { charactersStore, currentNovelIdStore } from "@/utils/stores";
 import { onMessage, sendMessage } from "webext-bridge/background";
 
-export default defineBackground(() => {
+// TODO: actually handle the errors
+
+function registerMessageListeners() {
+	onMessage(
+		BACKGROUND_ACTIONS.REMOVE_CHARACTER,
+		async ({ data: characterId }) => {
+			try {
+				return await charactersStore.remove(characterId);
+			} catch (err) {
+				console.error("REMOVE_CHARACTER failed:", err);
+				throw err;
+			}
+		},
+	);
+
+	onMessage(
+		BACKGROUND_ACTIONS.UPDATE_CHARACTER,
+		async ({ data: { characterId, characterChanges } }) => {
+			try {
+				return await charactersStore.update(characterId, characterChanges);
+			} catch (err) {
+				console.error("UPDATE_CHARACTER failed:", err);
+				throw err;
+			}
+		},
+	);
+
 	onMessage(
 		BACKGROUND_ACTIONS.GET_CHARACTERS,
 		async ({ data: { currentNovelOnly = true } }) => {
@@ -31,6 +57,10 @@ export default defineBackground(() => {
 			throw err;
 		}
 	});
+}
+
+export default defineBackground(() => {
+	registerMessageListeners();
 
 	browser.runtime.onInstalled.addListener(() => {
 		charactersStore.subscribe(async (characters) => {

@@ -10,6 +10,17 @@ declare module "webext-bridge" {
 			Character,
 			Character
 		>;
+		[BACKGROUND_ACTIONS.UPDATE_CHARACTER]: ProtocolWithReturn<
+			{
+				characterId: Character["id"];
+				characterChanges: Omit<Partial<Character>, "id">;
+			},
+			Character[]
+		>;
+		[BACKGROUND_ACTIONS.REMOVE_CHARACTER]: ProtocolWithReturn<
+			Character["id"],
+			Character[]
+		>;
 		[CONTENT_ACTIONS.PROMPT]: ProtocolWithReturn<string, string>;
 		[CONTENT_ACTIONS.TOAST]: string;
 		[CONTENT_ACTIONS.CHARACTERS_CHANGED]: Character[];
