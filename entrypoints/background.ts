@@ -29,25 +29,27 @@ function registerMessageListeners() {
 		},
 	);
 
-	onMessage(
-		BACKGROUND_ACTIONS.GET_CHARACTERS,
-		async ({ data: { currentNovelOnly = true } }) => {
-			try {
-				if (!currentNovelOnly) {
+	onMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, async ({ data }) => {
+		try {
+			switch (data.type) {
+				case "all":
 					return charactersStore.get();
+				case "id":
+					return charactersStore.select((cs) =>
+						cs.filter((c) => c.novelId === data.novelId),
+					);
+				case "current": {
+					const currentNovelId = await currentNovelIdStore.get();
+					return await charactersStore.select((cs) =>
+						cs.filter((c) => c.novelId === currentNovelId),
+					);
 				}
-
-				const currentNovelId = await currentNovelIdStore.get();
-				const characters = await charactersStore.select((cs) =>
-					cs.filter((c) => c.novelId === currentNovelId),
-				);
-				return characters;
-			} catch (err) {
-				console.error("GET_CHARACTERS failed:", err);
-				throw err;
 			}
-		},
-	);
+		} catch (err) {
+			console.error("GET_CHARACTERS failed:", err);
+			throw err;
+		}
+	});
 
 	onMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, async ({ data }) => {
 		try {

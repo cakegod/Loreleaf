@@ -3,7 +3,9 @@ import { ProtocolWithReturn } from "webext-bridge";
 declare module "webext-bridge" {
 	export interface ProtocolMap {
 		[BACKGROUND_ACTIONS.GET_CHARACTERS]: ProtocolWithReturn<
-			{ novelId?: string; currentNovelOnly?: boolean },
+			| { type: "all" }
+			| { type: "current" }
+			| { type: "id"; novelId: Novel["id"] },
 			Character[]
 		>;
 		[BACKGROUND_ACTIONS.ADD_CHARACTER]: ProtocolWithReturn<
