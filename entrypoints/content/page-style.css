@@ -1,11 +1,11 @@
-.highlight {
+.loreleaf_highlight {
 	text-decoration: dotted underline;
 	text-underline-offset: 3px;
 	text-decoration-color: whitesmoke;
 	transition: 200ms;
 }
 
-.highlight:hover {
+.loreleaf_highlight:hover {
 	text-decoration-color: deepskyblue;
 	transition: 200ms;
 }

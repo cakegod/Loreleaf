@@ -21,7 +21,7 @@ function markCharacters(
 		done() {
 			marker.mark(charactersName, {
 				separateWordSearch: false,
-				className: "highlight",
+				className: "loreleaf_highlight",
 				element: "span",
 				each(el: HTMLSpanElement) {
 					// The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
@@ -30,7 +30,7 @@ function markCharacters(
 						appendTo: container,
 						placement: "top",
 						content: () => {
-							const character = charMap.get(el.textContent)!;
+							const character = charMap.get(el.textContent.toLowerCase())!;
 							return character.note;
 						},
 					});
