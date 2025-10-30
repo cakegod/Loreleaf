@@ -1,0 +1,26 @@
+{
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "pedantic": "warn",
+    "perf": "error",
+    "style": "warn",
+    "restriction": "error",
+    "nursery": "warn"
+  },
+  "rules": {
+    "no-async-await": "off",
+    "no-optional-chaining": "off",
+    "no-warning-comments": "off",
+    "no-console": "off",
+    "id-length": "off",
+    "no-rest-spread-properties": "off",
+    "no-undef": "off",
+    "func-style": "off",
+    "no-ternary": "off",
+    "no-alert": "warn",
+    "sort-keys": "off",
+    "no-non-null-assertion": "warn",
+    "max-lines-per-function": "off"
+  }
+}

@@ -12,16 +12,30 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "lint": "oxlint .",
+    "prettify": "prettier . --write",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/mark.js": "^8.11.12",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "mark.js": "^8.11.1",
+    "oxlint": "^1.25.0",
+    "oxlint-tsgolint": "^0.4.0",
+    "prettier": "3.6.2",
     "typescript": "^5.9.2",
     "wxt": "^0.20.6"
   },
   "dependencies": {
     "tippy.js": "^6.3.7",
     "webext-bridge": "^6.0.1"
+  },
+  "lint-staged": {
+    "*": [
+      "pnpm lint",
+      "pnpm prettify"
+    ]
   }
 }
