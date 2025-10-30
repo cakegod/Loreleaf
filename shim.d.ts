@@ -2,6 +2,7 @@ import { ProtocolWithReturn } from "webext-bridge";
 
 declare module "webext-bridge" {
 	export interface ProtocolMap {
+		// Characters
 		[BACKGROUND_ACTIONS.GET_CHARACTERS]: ProtocolWithReturn<
 			| { type: "all" }
 			| { type: "current" }
@@ -22,6 +23,16 @@ declare module "webext-bridge" {
 		[BACKGROUND_ACTIONS.REMOVE_CHARACTER]: ProtocolWithReturn<
 			Character["id"],
 			Character[]
+		>;
+
+		// Current novel
+		[BACKGROUND_ACTIONS.GET_CURRENT_NOVEL]: ProtocolWithReturn<
+			null,
+			Novel["id"]
+		>;
+		[BACKGROUND_ACTIONS.SET_CURRENT_NOVEL]: ProtocolWithReturn<
+			Novel["id"],
+			Novel["id"]
 		>;
 		[CONTENT_ACTIONS.PROMPT]: ProtocolWithReturn<string, string>;
 		[CONTENT_ACTIONS.TOAST]: string;

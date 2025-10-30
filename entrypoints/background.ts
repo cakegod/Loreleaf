@@ -5,6 +5,26 @@ import { onMessage, sendMessage } from "webext-bridge/background";
 // TODO: actually handle the errors
 
 function registerMessageListeners() {
+	// Current novel
+	onMessage(BACKGROUND_ACTIONS.SET_CURRENT_NOVEL, async ({ data: novelId }) => {
+		try {
+			return await currentNovelIdStore.set(novelId);
+		} catch (err) {
+			console.error("SET_CURRENT_NOVEL failed:", err);
+			throw err;
+		}
+	});
+
+	onMessage(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, async () => {
+		try {
+			return await currentNovelIdStore.get();
+		} catch (err) {
+			console.error("GET_CURRENT_NOVEL failed:", err);
+			throw err;
+		}
+	});
+
+	// Characters
 	onMessage(
 		BACKGROUND_ACTIONS.REMOVE_CHARACTER,
 		async ({ data: characterId }) => {
@@ -63,7 +83,6 @@ function registerMessageListeners() {
 
 export default defineBackground(() => {
 	registerMessageListeners();
-
 	browser.runtime.onInstalled.addListener(() => {
 		charactersStore.subscribe(async (characters) => {
 			const [tab] = await browser.tabs.query({
