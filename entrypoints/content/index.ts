@@ -1,12 +1,11 @@
+import "./shadow-style.css";
 import { BACKGROUND_ACTIONS, CONTENT_ACTIONS } from "@/utils/actions";
 import { onMessage, sendMessage } from "webext-bridge/content-script";
-import Mark from "mark.js";
-import tippy from "tippy.js";
-import pageStyle from "./page-style.css?inline";
-import "./shadow-style.css";
-
 import type { Character } from "@/utils/stores";
+import Mark from "mark.js";
+import pageStyle from "./page-style.css?inline";
 import { showContextDialog } from "./context-dialog";
+import tippy from "tippy.js";
 
 const html = String.raw;
 
@@ -16,7 +15,7 @@ function markCharacters(
   container: HTMLElement,
 ): void {
   const charactersName = characters.map((c) => c.name);
-  const charMap = new Map(characters.map((c) => [c.name, c]));
+  const charMap = new Map(characters.map((c) => [c.name.toLowerCase(), c]));
   marker.unmark({
     done() {
       marker.mark(charactersName, {
@@ -30,8 +29,8 @@ function markCharacters(
             appendTo: container,
             placement: "top",
             content: () => {
-              const character = charMap.get(el.textContent.toLowerCase())!;
-              return character.note;
+              const character = charMap.get(el.textContent.toLowerCase());
+              return character?.note ?? "No context";
             },
           });
 
