@@ -10,7 +10,7 @@ declare module "webext-bridge" {
       Character[]
     >;
     [BACKGROUND_ACTIONS.ADD_CHARACTER]: ProtocolWithReturn<
-      Character,
+      Omit<Character, "id">,
       Character
     >;
     [BACKGROUND_ACTIONS.UPDATE_CHARACTER]: ProtocolWithReturn<
@@ -25,9 +25,16 @@ declare module "webext-bridge" {
       Character[]
     >;
 
+    // Novels
+    [BACKGROUND_ACTIONS.GET_NOVELS]: ProtocolWithReturn<unknown, Novel[]>;
+    [BACKGROUND_ACTIONS.ADD_NOVEL]: ProtocolWithReturn<
+      { title: string },
+      Novel
+    >;
+
     // Current novel
     [BACKGROUND_ACTIONS.GET_CURRENT_NOVEL]: ProtocolWithReturn<
-      null,
+      unknown,
       Novel["id"]
     >;
     [BACKGROUND_ACTIONS.SET_CURRENT_NOVEL]: ProtocolWithReturn<

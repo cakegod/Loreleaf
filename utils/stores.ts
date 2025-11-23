@@ -1,3 +1,4 @@
+// oxlint-disable explicit-function-return-type
 export interface Novel {
   id: string;
   title: string;
@@ -21,7 +22,6 @@ export interface Relationship {
   description?: string;
 }
 
-// oxlint-disable-next-line explicit-function-return-type
 export const charactersStore = (() => {
   const _storage = storage.defineItem<Character[]>("local:characters", {
     fallback: [],
@@ -66,7 +66,6 @@ export const charactersStore = (() => {
   return { get, create, update, remove, select, subscribe: _storage.watch };
 })();
 
-// oxlint-disable-next-line explicit-function-return-type
 export const currentNovelIdStore = (() => {
   const _storage = storage.defineItem<Novel["id"]>("local:currentNovel", {
     fallback: "",
@@ -82,4 +81,59 @@ export const currentNovelIdStore = (() => {
   }
 
   return { subscribe: _storage.watch, get, set };
+})();
+
+export const novelsStore = (() => {
+  const _storage = storage.defineItem<Novel[]>("local:novels", {
+    fallback: [],
+  });
+
+  function get(): Promise<Novel[]> {
+    return _storage.getValue();
+  }
+
+  async function set(value: Novel[]): Promise<Novel[]> {
+    await _storage.setValue(value);
+    return get();
+  }
+
+  async function create(novel: Omit<Novel, "id">): Promise<Novel> {
+    const newNovel = { ...novel, id: crypto.randomUUID() };
+    const novels = await _storage.getValue();
+    await _storage.setValue([...novels, newNovel]);
+    return newNovel;
+  }
+
+  async function update(
+    id: Novel["id"],
+    novelChanges: Omit<Partial<Novel>, "id">,
+  ): Promise<Novel[]> {
+    const novels = await _storage.getValue();
+    await _storage.setValue(
+      novels.map((n) => (n.id === id ? { ...n, ...novelChanges } : n)),
+    );
+    return novels;
+  }
+
+  async function remove(id: Novel["id"]): Promise<Novel[]> {
+    const novels = await _storage.getValue();
+    const newNovels = novels.filter((n) => n.id !== id);
+    await _storage.setValue(newNovels);
+    return newNovels;
+  }
+
+  async function select<R>(selector: (storageValue: Novel[]) => R): Promise<R> {
+    const storageValue = await _storage.getValue();
+    return selector(storageValue);
+  }
+
+  return {
+    subscribe: _storage.watch,
+    get,
+    set,
+    create,
+    update,
+    remove,
+    select,
+  };
 })();

@@ -6,4 +6,5 @@ export default defineConfig({
     name: "Loreleaf",
     permissions: ["storage", "contextMenus"],
   },
+  modules: ["@wxt-dev/module-svelte"],
 });

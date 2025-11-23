@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@types/mark.js": "^8.11.12",
+    "@wxt-dev/module-svelte": "^2.0.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
     "mark.js": "^8.11.1",
@@ -29,6 +30,7 @@
     "wxt": "^0.20.6"
   },
   "dependencies": {
+    "svelte": "^5.43.14",
     "tippy.js": "^6.3.7",
     "webext-bridge": "^6.0.1"
   },

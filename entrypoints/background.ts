@@ -1,13 +1,37 @@
 import { BACKGROUND_ACTIONS, CONTENT_ACTIONS } from "@/utils/actions";
-import { charactersStore, currentNovelIdStore } from "@/utils/stores";
+import {
+  charactersStore,
+  currentNovelIdStore,
+  novelsStore,
+} from "@/utils/stores";
 import { onMessage, sendMessage } from "webext-bridge/background";
 
 // TODO: actually handle the errors
 
 function registerMessageListeners(): void {
+  // Novels
+  onMessage(BACKGROUND_ACTIONS.GET_NOVELS, async () => {
+    try {
+      return await novelsStore.get();
+    } catch (error) {
+      console.error("GET_NOVELS failed:", error);
+      throw error;
+    }
+  });
+
+  onMessage(BACKGROUND_ACTIONS.ADD_NOVEL, async ({ data }) => {
+    try {
+      return await novelsStore.create(data);
+    } catch (error) {
+      console.error("ADD_NOVEL failed:", error);
+      throw error;
+    }
+  });
+
   // Current novel
   onMessage(BACKGROUND_ACTIONS.SET_CURRENT_NOVEL, async ({ data: novelId }) => {
     try {
+      console.log("SET", novelId);
       return await currentNovelIdStore.set(novelId);
     } catch (error) {
       console.error("SET_CURRENT_NOVEL failed:", error);
@@ -101,6 +125,27 @@ export default defineBackground(() => {
         `content-script@${tab.id}`,
       );
     });
+
+    currentNovelIdStore.subscribe(async (currentNovelId) => {
+      const [tab] = await browser.tabs.query({
+        active: true,
+        lastFocusedWindow: true,
+      });
+
+      /**
+       * TODO: check the above
+       * 1. not sure about using this message action. It's the same used as if the character has been added
+       * 2. this duplicates some of the logic of onMessage GET_CHARACTERS
+       */
+      await sendMessage(
+        CONTENT_ACTIONS.CHARACTERS_CHANGED,
+        await charactersStore.select((cs) =>
+          cs.filter((c) => c.novelId === currentNovelId),
+        ),
+        `content-script@${tab.id}`,
+      );
+    });
+
     browser.contextMenus.create({
       id: "character-selection",
       title: "Add Character",

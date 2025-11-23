@@ -1,19 +1,8 @@
 import "./style.css";
-import { sendMessage } from "webext-bridge/popup";
+import App from "./app.svelte";
+import { mount } from "svelte";
 
-const charactersContainer = document.querySelector(
-  ".characters",
-) as HTMLDivElement;
-
-const characters = await sendMessage(
-  BACKGROUND_ACTIONS.GET_CHARACTERS,
-  { type: "current" },
-  "background",
-);
-console.log("from popup", characters);
-
-for (const char of characters) {
-  const li = document.createElement("li");
-  li.textContent = `${char.name}: ${char.note}`;
-  charactersContainer.append(li);
-}
+mount(App, {
+  // oxlint-disable-next-line no-non-null-assertion
+  target: document.querySelector("#app")!,
+});
