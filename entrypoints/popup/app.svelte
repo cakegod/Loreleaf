@@ -55,6 +55,9 @@
 	</select>
 
 	{#if manager.state.currentNovelId}
+		<button onclick={() => manager.removeNovel(manager.state.currentNovelId!)}
+			>Remove Novel</button
+		>
 		<label>
 			Character name
 			<input
@@ -84,8 +87,10 @@
 		>
 			Add character
 		</button>
+	{:else if manager.state.novels.length === 0}
+		Create a novel to add a new character
 	{:else}
-		Add a novel to add characters
+		Select a novel to add a new character
 	{/if}
 
 	{#await manager.state.characters then characters}
@@ -96,3 +101,5 @@
 		</ul>
 	{/await}
 {/if}
+
+

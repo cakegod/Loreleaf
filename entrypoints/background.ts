@@ -28,6 +28,15 @@ function registerMessageListeners(): void {
     }
   });
 
+  onMessage(BACKGROUND_ACTIONS.REMOVE_NOVEL, async ({ data: novelId }) => {
+    try {
+      return await novelsStore.remove(novelId);
+    } catch (error) {
+      console.error("GET_CURRENT_NOVEL failed:", error);
+      throw error;
+    }
+  });
+
   // Current novel
   onMessage(BACKGROUND_ACTIONS.SET_CURRENT_NOVEL, async ({ data: novelId }) => {
     try {
@@ -54,6 +63,18 @@ function registerMessageListeners(): void {
     async ({ data: characterId }) => {
       try {
         return await charactersStore.remove(characterId);
+      } catch (error) {
+        console.error("REMOVE_CHARACTER failed:", error);
+        throw error;
+      }
+    },
+  );
+
+  onMessage(
+    BACKGROUND_ACTIONS.REMOVE_MANY_CHARACTERS,
+    async ({ data: characterIds }) => {
+      try {
+        return await charactersStore.removeMany(characterIds);
       } catch (error) {
         console.error("REMOVE_CHARACTER failed:", error);
         throw error;

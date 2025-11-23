@@ -25,12 +25,18 @@ declare module "webext-bridge" {
       Character[]
     >;
 
+    [BACKGROUND_ACTIONS.REMOVE_MANY_CHARACTERS]: ProtocolWithReturn<
+      Character["id"][],
+      Character[]
+    >;
+
     // Novels
     [BACKGROUND_ACTIONS.GET_NOVELS]: ProtocolWithReturn<unknown, Novel[]>;
     [BACKGROUND_ACTIONS.ADD_NOVEL]: ProtocolWithReturn<
       { title: string },
       Novel
     >;
+    [BACKGROUND_ACTIONS.REMOVE_NOVEL]: ProtocolWithReturn<Novel["id"], Novel[]>;
 
     // Current novel
     [BACKGROUND_ACTIONS.GET_CURRENT_NOVEL]: ProtocolWithReturn<

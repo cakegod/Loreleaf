@@ -56,6 +56,13 @@ export const charactersStore = (() => {
     return newCharacters;
   }
 
+  async function removeMany(ids: Character["id"][]): Promise<Character[]> {
+    const characters = await _storage.getValue();
+    const newCharacters = characters.filter((c) => !ids.includes(c.id));
+    await _storage.setValue(newCharacters);
+    return newCharacters;
+  }
+
   async function select<R>(
     selector: (storageValue: Character[]) => R,
   ): Promise<R> {
@@ -63,7 +70,15 @@ export const charactersStore = (() => {
     return selector(storageValue);
   }
 
-  return { get, create, update, remove, select, subscribe: _storage.watch };
+  return {
+    get,
+    create,
+    update,
+    remove,
+    removeMany,
+    select,
+    subscribe: _storage.watch,
+  };
 })();
 
 export const currentNovelIdStore = (() => {

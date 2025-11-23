@@ -9,6 +9,13 @@ const API = {
       "background",
     );
   },
+  getCharactersFromNovelId(novelId: Novel["id"]): Promise<Character[]> {
+    return sendMessage(
+      BACKGROUND_ACTIONS.GET_CHARACTERS,
+      { type: "id", novelId },
+      "background",
+    );
+  },
   getCurrentNovelId(): Promise<Novel["id"]> {
     return sendMessage(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, {}, "background");
   },
@@ -25,8 +32,21 @@ const API = {
   addNovel(title: Novel["title"]): Promise<Novel> {
     return sendMessage(BACKGROUND_ACTIONS.ADD_NOVEL, { title }, "background");
   },
+  removeNovel(id: Novel["id"]): Promise<Novel[]> {
+    return sendMessage(BACKGROUND_ACTIONS.REMOVE_NOVEL, id, "background");
+  },
   addCharacter(data: Omit<Character, "id">): Promise<Character> {
     return sendMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, data, "background");
+  },
+  removeCharacter(id: Character["id"]): Promise<Character[]> {
+    return sendMessage(BACKGROUND_ACTIONS.REMOVE_CHARACTER, id, "background");
+  },
+  removeManyCharacters(ids: Character["id"][]): Promise<Character[]> {
+    return sendMessage(
+      BACKGROUND_ACTIONS.REMOVE_MANY_CHARACTERS,
+      ids,
+      "background",
+    );
   },
 };
 
@@ -118,14 +138,50 @@ export class NovelsManager {
     });
   }
 
+  async removeNovel(novelId: Novel["id"]): Promise<void> {
+    await this.#exec(async () => {
+      const charactersIds = await API.getCharactersFromNovelId(novelId).then(
+        (characters) => characters.map((c) => c.id),
+      );
+
+      await Promise.all([
+        API.removeManyCharacters(charactersIds),
+        API.removeNovel(novelId),
+        API.setCurrentNovel(""),
+      ]);
+
+      const [currentNovelId, characters, novels] = await Promise.all([
+        API.getCurrentNovelId(),
+        API.getCurrentCharacters(),
+        API.getNovels(),
+      ]);
+      return {
+        currentNovelId,
+        characters,
+        novels,
+      };
+    });
+  }
+
   async addCharacter(data: Omit<Character, "id" | "novelId">): Promise<void> {
     await this.#exec(async () => {
-      const novelId = await API.getCurrentNovelId();
+      const currentNovelId = await API.getCurrentNovelId();
       await API.addCharacter({
         ...data,
-        novelId,
+        novelId: currentNovelId,
       });
 
+      const characters = await API.getCurrentCharacters();
+      return {
+        ...this.state,
+        characters,
+      };
+    });
+  }
+
+  async removeCharacter(id: Character["id"]): Promise<void> {
+    await this.#exec(async () => {
+      await API.removeCharacter(id);
       const characters = await API.getCurrentCharacters();
       return {
         ...this.state,

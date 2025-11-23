@@ -5,5 +5,10 @@ h1 {
 body {
   width: 100%;
   max-width: 40ch;
-  min-width: 250px;
+  min-width: 300px;
+  margin: 12px;
+}
+
+label {
+  display: grid;
 }
