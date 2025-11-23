@@ -22,6 +22,7 @@
     "sort-keys": "off",
     "no-non-null-assertion": "warn",
     "max-lines-per-function": "off",
-    "arrow-body-style": "off"
+    "arrow-body-style": "off",
+    "consistent-type-definitions": "off"
   }
 }

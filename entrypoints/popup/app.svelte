@@ -13,6 +13,8 @@
 	onMount(() => {
 		manager.init();
 	});
+
+	$inspect(manager.state);
 </script>
 
 <p>Create novel</p>
@@ -33,7 +35,7 @@
 
 {#if manager.state.status === "loading"}
 	Loading...
-{:else if manager.state.status === "success"}
+{:else if manager.state.status === "idle"}
 	<label for="current-novel">Current novel:</label>
 	<select
 		id="current-novel"
@@ -74,6 +76,10 @@
 		<button
 			onclick={async () => {
 				manager.addCharacter(newCharacter);
+				newCharacter = {
+					name: "",
+					note: "",
+				};
 			}}
 		>
 			Add character
