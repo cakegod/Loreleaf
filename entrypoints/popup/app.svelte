@@ -22,8 +22,12 @@
 
 <p>Create novel</p>
 <form>
-	<label>
-		Novel title (required)
+	<div class="input__group">
+		<label for="new-novel-title">
+			Novel title <span aria-hidden="true" class="label__required"
+				>(required)</span
+			>
+		</label>
 		<input
 			required
 			type="text"
@@ -31,16 +35,16 @@
 			id="new-novel-title"
 			bind:value={newNovel.title}
 		/>
-	</label>
-	<label>
-		Novel description (optional)
+	</div>
+	<div class="input__group">
+		<label for="new-novel-description"> Novel description</label>
 		<textarea
 			name="new-novel-description"
 			id="new-novel-description"
 			bind:value={newNovel.description}
 		>
 		</textarea>
-	</label>
+	</div>
 	<button
 		onclick={async (e) => {
 			e.preventDefault();
@@ -51,61 +55,70 @@
 		Add novel
 	</button>
 </form>
-
+<hr />
 {#if managerState.status === "loading"}
 	Loading...
 {:else if managerState.status === "idle"}
-	<label for="current-novel">Current novel:</label>
-	<select
-		id="current-novel"
-		value={managerState.currentNovelId}
-		onchange={(e) => {
-			manager.setCurrentNovel((e.target as HTMLOptionElement).value);
-		}}
-	>
-		{#each managerState.novels as novel}
-			<option
-				selected={novel.id === managerState.currentNovelId}
-				value={novel.id}
+	<div class="current-novel-container">
+		<div class="input__group">
+			<label for="current-novel">Current novel:</label>
+			<select
+				id="current-novel"
+				value={managerState.currentNovelId}
+				onchange={(e) => {
+					manager.setCurrentNovel((e.target as HTMLOptionElement).value);
+				}}
 			>
-				{novel.title}
-			</option>
-		{/each}
-	</select>
-
+				{#each managerState.novels as novel}
+					<option
+						selected={novel.id === managerState.currentNovelId}
+						value={novel.id}
+					>
+						{novel.title}
+					</option>
+				{/each}
+			</select>
+		</div>
+		{#if managerState.currentNovelId}
+			<button onclick={() => manager.removeNovel(managerState.currentNovelId)}>
+				Remove Novel
+			</button>
+		{/if}
+	</div>
 	{#if managerState.currentNovelId}
-		<button onclick={() => manager.removeNovel(managerState.currentNovelId)}>
-			Remove Novel
-		</button>
-		<label>
-			Character name
-			<input
-				type="text"
-				name="new-character-name"
-				id="new-character-name"
-				bind:value={newCharacter.name}
-			/>
-		</label>
-		<label>
-			Character note
-			<input
-				type="text"
-				name="new-character-note"
-				id="new-character-note"
-				bind:value={newCharacter.note}
-			/>
-		</label>
-		<button
-			onclick={async () => {
-				manager.addCharacter(newCharacter);
-				newCharacter = {
-					name: "",
-					note: "",
-				};
-			}}
-		>
-			Add character
-		</button>
+		<hr />
+		<form>
+			<div class="input__group">
+				<label for="new-character-name">Character name</label>
+				<input
+					type="text"
+					name="new-character-name"
+					id="new-character-name"
+					bind:value={newCharacter.name}
+				/>
+			</div>
+			<div class="input__group">
+				<label for="new-character-note">Character note</label>
+				<input
+					type="text"
+					name="new-character-note"
+					id="new-character-note"
+					bind:value={newCharacter.note}
+				/>
+			</div>
+			<button
+				onclick={async (e) => {
+					e.preventDefault();
+					manager.addCharacter(newCharacter);
+					newCharacter = {
+						name: "",
+						note: "",
+					};
+				}}
+			>
+				Add character
+			</button>
+		</form>
 	{:else if managerState.novels.length === 0}
 		Create a novel to add a new character
 	{:else}

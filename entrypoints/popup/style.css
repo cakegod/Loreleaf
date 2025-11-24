@@ -9,6 +9,22 @@ body {
   margin: 12px;
 }
 
-label {
+.input__group {
+  display: grid;
+}
+
+.label__required {
+  color: crimson;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block: 12px;
+}
+
+.current-novel-container {
+  gap: 6px;
   display: grid;
 }
