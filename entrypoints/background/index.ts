@@ -7,14 +7,17 @@ export default defineBackground(() => {
   registerMessageListeners();
 
   browser.runtime.onInstalled.addListener(() => {
-    charactersStore.subscribe(async (characters) => {
+    charactersStore.subscribe(async () => {
       const [tab] = await browser.tabs.query({
         active: true,
         lastFocusedWindow: true,
       });
+      const currentNovelId = await currentNovelIdStore.get();
       await sendMessage(
         CONTENT_ACTIONS.CHARACTERS_CHANGED,
-        characters,
+        await charactersStore.select((cs) =>
+          cs.filter((c) => c.novelId === currentNovelId),
+        ),
         `content-script@${tab.id}`,
       );
     });
