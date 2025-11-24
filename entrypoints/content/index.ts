@@ -3,56 +3,46 @@ import { BACKGROUND_ACTIONS, CONTENT_ACTIONS } from "@/utils/actions";
 import { onMessage, sendMessage } from "webext-bridge/content-script";
 import type { Character } from "@/utils/stores";
 import Mark from "mark.js";
+import { delegate } from "tippy.js";
 import pageStyle from "./page-style.css?inline";
 import { showContextDialog } from "./context-dialog";
-import tippy from "tippy.js";
 
-const html = String.raw;
+function markCharacters(characters: Character[], marker: Mark): void {
+  requestIdleCallback(() => {
+    const charactersName = characters.map((c) => c.name);
+    const charMap = new Map(characters.map((c) => [c.name.toLowerCase(), c]));
+    console.log(characters);
+    marker.unmark({
+      done() {
+        marker.mark(charactersName, {
+          separateWordSearch: false,
+          className: "loreleaf_highlight",
+          element: "span",
+          each(el: HTMLSpanElement) {
+            const character = charMap.get(el.textContent.toLowerCase());
+            el.dataset.tippyContent = character?.note ?? "No context";
+          },
+        });
+      },
+    });
 
-function markCharacters(
-  characters: Character[],
-  marker: Mark,
-  container: HTMLElement,
-): void {
-  const charactersName = characters.map((c) => c.name);
-  const charMap = new Map(characters.map((c) => [c.name.toLowerCase(), c]));
-  marker.unmark({
-    done() {
-      marker.mark(charactersName, {
-        separateWordSearch: false,
-        className: "loreleaf_highlight",
-        element: "span",
-        each(el: HTMLSpanElement) {
-          // The tooltip has to be appended to the shadow container so the shadow (isolated) styles are applied to it
-          // TODO: this might perform poorly
-          tippy(el, {
-            appendTo: container,
-            placement: "top",
-            content: () => {
-              const character = charMap.get(el.textContent.toLowerCase());
-              return character?.note ?? "No context";
-            },
-          });
+    // TODO: it seems tippy doesn't allow two delegates for the same element
 
-          tippy(el, {
-            touch: ["hold", 300],
-            trigger: "click",
-            allowHTML: true,
-            interactive: true,
-            placement: "bottom",
-            appendTo: container,
-            content: html`<button
-                class="tippy-content__btn tippy-content__btn--edit"
-              >
-                Edit
-              </button>
-              <button class="tippy-content__btn tippy-content__btn--remove">
-                Remove
-              </button>`,
-          });
-        },
-      });
-    },
+    // delegate(document.body, {
+    // 	touch: ["hold", 300],
+    // 	target: ".loreleaf_highlight",
+    // 	trigger: "click",
+    // 	allowHTML: true,
+    // 	interactive: true,
+    // 	placement: "bottom",
+    // 	appendTo: container,
+    // 	content: `<button class="tippy-content__btn tippy-content__btn--edit">
+    // 		Edit
+    // 	</button>
+    // 	<button class="tippy-content__btn tippy-content__btn--remove">
+    // 		Remove
+    // 	</button>`,
+    // });
   });
 }
 
@@ -76,7 +66,7 @@ function registerMessageListeners(marker: Mark, container: HTMLElement): void {
   });
 
   onMessage(CONTENT_ACTIONS.CHARACTERS_CHANGED, ({ data: characters }) => {
-    markCharacters(characters, marker, container);
+    markCharacters(characters, marker);
   });
 
   onMessage(CONTENT_ACTIONS.TOAST, ({ data }) => {
@@ -103,7 +93,14 @@ export default defineContentScript({
           { type: "current" },
           "background",
         );
-        markCharacters(characters, marker, container);
+
+        delegate(document.body, {
+          target: ".loreleaf_highlight",
+          appendTo: container,
+          trigger: "mouseenter focus",
+        });
+
+        markCharacters(characters, marker);
 
         // SPAs change URLs without reloading the page.
         // The 'wxt:locationchange' event is dispatched by the extension to detect such navigation,
@@ -114,7 +111,7 @@ export default defineContentScript({
             { type: "current" },
             "background",
           );
-          markCharacters(characters, marker, container);
+          markCharacters(characters, marker);
         });
       },
     });
