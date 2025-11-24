@@ -1,4 +1,9 @@
-import type { Character, Novel } from "@/utils/stores";
+import type {
+  Character,
+  CharacterChanges,
+  Novel,
+  NovelChanges,
+} from "@/utils/stores";
 import { sendMessage } from "webext-bridge/popup";
 
 const API = {
@@ -29,14 +34,34 @@ const API = {
       "background",
     );
   },
-  addNovel(title: Novel["title"]): Promise<Novel> {
-    return sendMessage(BACKGROUND_ACTIONS.ADD_NOVEL, { title }, "background");
+  addNovel(data: Omit<Novel, "id">): Promise<Novel> {
+    return sendMessage(BACKGROUND_ACTIONS.ADD_NOVEL, data, "background");
+  },
+  updateNovel(
+    novelId: Novel["id"],
+    novelChanges: NovelChanges,
+  ): Promise<Novel[]> {
+    return sendMessage(
+      BACKGROUND_ACTIONS.UPDATE_NOVEL,
+      { novelId, novelChanges },
+      "background",
+    );
   },
   removeNovel(id: Novel["id"]): Promise<Novel[]> {
     return sendMessage(BACKGROUND_ACTIONS.REMOVE_NOVEL, id, "background");
   },
   addCharacter(data: Omit<Character, "id">): Promise<Character> {
     return sendMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, data, "background");
+  },
+  updateCharacter(
+    characterId: Character["id"],
+    characterChanges: CharacterChanges,
+  ): Promise<Character[]> {
+    return sendMessage(
+      BACKGROUND_ACTIONS.UPDATE_CHARACTER,
+      { characterId, characterChanges },
+      "background",
+    );
   },
   removeCharacter(id: Character["id"]): Promise<Character[]> {
     return sendMessage(BACKGROUND_ACTIONS.REMOVE_CHARACTER, id, "background");
@@ -119,9 +144,9 @@ export class NovelsManager {
     };
   }
 
-  async addNovel(title: Novel["title"]): Promise<void> {
+  async addNovel(data: Omit<Novel, "id">): Promise<void> {
     await this.#exec(async () => {
-      const newNovel = await API.addNovel(title);
+      const newNovel = await API.addNovel(data);
 
       await API.setCurrentNovel(newNovel.id);
 
@@ -201,6 +226,20 @@ export class NovelsManager {
       return {
         currentNovelId,
         characters,
+      };
+    });
+  }
+
+  async updateNovel(
+    id: Novel["id"],
+    novelChanges: NovelChanges,
+  ): Promise<void> {
+    await this.#exec(async () => {
+      await API.updateNovel(id, novelChanges);
+      const novels = await API.getNovels();
+      return {
+        ...this.state,
+        novels,
       };
     });
   }

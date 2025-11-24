@@ -16,7 +16,7 @@ declare module "webext-bridge" {
     [BACKGROUND_ACTIONS.UPDATE_CHARACTER]: ProtocolWithReturn<
       {
         characterId: Character["id"];
-        characterChanges: Omit<Partial<Character>, "id">;
+        characterChanges: CharacterChanges;
       },
       Character[]
     >;
@@ -33,10 +33,17 @@ declare module "webext-bridge" {
     // Novels
     [BACKGROUND_ACTIONS.GET_NOVELS]: ProtocolWithReturn<unknown, Novel[]>;
     [BACKGROUND_ACTIONS.ADD_NOVEL]: ProtocolWithReturn<
-      { title: string },
+      Omit<Novel, "id">,
       Novel
     >;
     [BACKGROUND_ACTIONS.REMOVE_NOVEL]: ProtocolWithReturn<Novel["id"], Novel[]>;
+    [BACKGROUND_ACTIONS.UPDATE_NOVEL]: ProtocolWithReturn<
+      {
+        novelId: Novel["id"];
+        novelChanges: NovelChanges;
+      },
+      Novel[]
+    >;
 
     // Current novel
     [BACKGROUND_ACTIONS.GET_CURRENT_NOVEL]: ProtocolWithReturn<

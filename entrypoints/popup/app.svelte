@@ -4,11 +4,14 @@
 
 	const manager = new NovelsManager();
 
-	let newNovelTitle = $state("");
+	let newNovel = $state<Omit<Novel, "id">>({ title: "", description: "" });
 	let newCharacter = $state({
 		name: "",
 		note: "",
 	});
+
+	// for type narrowing
+	let managerState = $derived(manager.state);
 
 	onMount(() => {
 		manager.init();
@@ -18,35 +21,51 @@
 </script>
 
 <p>Create novel</p>
-<input
-	type="text"
-	name="new-novel-title"
-	id="new-novel-title"
-	bind:value={newNovelTitle}
-/>
-<button
-	onclick={async () => {
-		manager.addNovel(newNovelTitle);
-		newNovelTitle = "";
-	}}
->
-	Add novel
-</button>
+<form>
+	<label>
+		Novel title (required)
+		<input
+			required
+			type="text"
+			name="new-novel-title"
+			id="new-novel-title"
+			bind:value={newNovel.title}
+		/>
+	</label>
+	<label>
+		Novel description (optional)
+		<textarea
+			name="new-novel-description"
+			id="new-novel-description"
+			bind:value={newNovel.description}
+		>
+		</textarea>
+	</label>
+	<button
+		onclick={async (e) => {
+			e.preventDefault();
+			manager.addNovel(newNovel);
+			newNovel.title = "";
+		}}
+	>
+		Add novel
+	</button>
+</form>
 
-{#if manager.state.status === "loading"}
+{#if managerState.status === "loading"}
 	Loading...
-{:else if manager.state.status === "idle"}
+{:else if managerState.status === "idle"}
 	<label for="current-novel">Current novel:</label>
 	<select
 		id="current-novel"
-		value={manager.state.currentNovelId}
+		value={managerState.currentNovelId}
 		onchange={(e) => {
 			manager.setCurrentNovel((e.target as HTMLOptionElement).value);
 		}}
 	>
-		{#each manager.state.novels as novel}
+		{#each managerState.novels as novel}
 			<option
-				selected={novel.id === manager.state.currentNovelId}
+				selected={novel.id === managerState.currentNovelId}
 				value={novel.id}
 			>
 				{novel.title}
@@ -54,10 +73,10 @@
 		{/each}
 	</select>
 
-	{#if manager.state.currentNovelId}
-		<button onclick={() => manager.removeNovel(manager.state.currentNovelId!)}
-			>Remove Novel</button
-		>
+	{#if managerState.currentNovelId}
+		<button onclick={() => manager.removeNovel(managerState.currentNovelId)}>
+			Remove Novel
+		</button>
 		<label>
 			Character name
 			<input
@@ -87,13 +106,13 @@
 		>
 			Add character
 		</button>
-	{:else if manager.state.novels.length === 0}
+	{:else if managerState.novels.length === 0}
 		Create a novel to add a new character
 	{:else}
 		Select a novel to add a new character
 	{/if}
 
-	{#await manager.state.characters then characters}
+	{#await managerState.characters then characters}
 		<ul>
 			{#each characters as character}
 				<li>{character.name}: {character.note}</li>
@@ -101,5 +120,3 @@
 		</ul>
 	{/await}
 {/if}
-
-

@@ -3,8 +3,10 @@ export interface Novel {
   id: string;
   title: string;
   author?: string;
-  description?: string;
+  description: string;
 }
+
+export type NovelChanges = Omit<Partial<Novel>, "id">;
 
 export interface Character {
   id: string;
@@ -13,6 +15,8 @@ export interface Character {
   novelId: string;
   note: string;
 }
+
+export type CharacterChanges = Omit<Partial<Character>, "id" | "novelId">;
 
 export interface Relationship {
   id: string;
@@ -40,7 +44,7 @@ export const charactersStore = (() => {
 
   async function update(
     id: Character["id"],
-    characterChanges: Omit<Partial<Character>, "id">,
+    characterChanges: CharacterChanges,
   ): Promise<Character[]> {
     const characters = await _storage.getValue();
     await _storage.setValue(
@@ -121,7 +125,7 @@ export const novelsStore = (() => {
 
   async function update(
     id: Novel["id"],
-    novelChanges: Omit<Partial<Novel>, "id">,
+    novelChanges: NovelChanges,
   ): Promise<Novel[]> {
     const novels = await _storage.getValue();
     await _storage.setValue(
