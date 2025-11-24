@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from "svelte/transition";
 	import { NovelsManager } from "./novels-manager.svelte";
 	import { onMount } from "svelte";
 
@@ -21,12 +22,17 @@
 </script>
 
 <p>Create novel</p>
-<form>
+<form
+	onsubmit={async (e) => {
+		e.preventDefault();
+		await manager.addNovel(newNovel);
+		newNovel.title = "";
+	}}
+>
 	<div class="input__group">
 		<label for="new-novel-title">
-			Novel title <span aria-hidden="true" class="label__required"
-				>(required)</span
-			>
+			Novel title
+			<span aria-hidden="true" class="label__required">(required)</span>
 		</label>
 		<input
 			required
@@ -37,7 +43,7 @@
 		/>
 	</div>
 	<div class="input__group">
-		<label for="new-novel-description"> Novel description</label>
+		<label for="new-novel-description">Novel description</label>
 		<textarea
 			name="new-novel-description"
 			id="new-novel-description"
@@ -45,21 +51,12 @@
 		>
 		</textarea>
 	</div>
-	<button
-		onclick={async (e) => {
-			e.preventDefault();
-			manager.addNovel(newNovel);
-			newNovel.title = "";
-		}}
-	>
-		Add novel
-	</button>
+	<button>Add novel</button>
 </form>
 <hr />
-{#if managerState.status === "loading"}
-	Loading...
-{:else if managerState.status === "idle"}
-	<div class="current-novel-container">
+
+{#if managerState.status === "idle"}
+	<div transition:fade class="current-novel-container">
 		<div class="input__group">
 			<label for="current-novel">Current novel:</label>
 			<select
@@ -87,10 +84,23 @@
 	</div>
 	{#if managerState.currentNovelId}
 		<hr />
-		<form>
+		<form
+			onsubmit={async (e) => {
+				e.preventDefault();
+				manager.addCharacter(newCharacter);
+				newCharacter = {
+					name: "",
+					note: "",
+				};
+			}}
+		>
 			<div class="input__group">
-				<label for="new-character-name">Character name</label>
+				<label for="new-character-name">
+					Character name
+					<span aria-hidden="true" class="label__required"> (required) </span>
+				</label>
 				<input
+					required
 					type="text"
 					name="new-character-name"
 					id="new-character-name"
@@ -99,25 +109,14 @@
 			</div>
 			<div class="input__group">
 				<label for="new-character-note">Character note</label>
-				<input
-					type="text"
+				<textarea
 					name="new-character-note"
 					id="new-character-note"
 					bind:value={newCharacter.note}
-				/>
+				>
+				</textarea>
 			</div>
-			<button
-				onclick={async (e) => {
-					e.preventDefault();
-					manager.addCharacter(newCharacter);
-					newCharacter = {
-						name: "",
-						note: "",
-					};
-				}}
-			>
-				Add character
-			</button>
+			<button>Add character</button>
 		</form>
 	{:else if managerState.novels.length === 0}
 		Create a novel to add a new character
@@ -125,11 +124,9 @@
 		Select a novel to add a new character
 	{/if}
 
-	{#await managerState.characters then characters}
-		<ul>
-			{#each characters as character}
-				<li>{character.name}: {character.note}</li>
-			{/each}
-		</ul>
-	{/await}
+	<ul>
+		{#each managerState.characters as character}
+			<li>{character.name}: {character.note}</li>
+		{/each}
+	</ul>
 {/if}
