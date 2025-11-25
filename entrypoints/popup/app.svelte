@@ -108,8 +108,12 @@
 				/>
 			</div>
 			<div class="input__group">
-				<label for="new-character-note">Character note</label>
+				<label for="new-character-note">
+					Character note
+					<span aria-hidden="true" class="label__required"> (required) </span>
+				</label>
 				<textarea
+					required
 					name="new-character-note"
 					id="new-character-note"
 					bind:value={newCharacter.note}
