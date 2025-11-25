@@ -1,4 +1,5 @@
-// oxlint-disable explicit-function-return-type
+import type { WatchCallback } from "wxt/utils/storage";
+
 export interface Novel {
   id: string;
   title: string;
@@ -18,141 +19,109 @@ export interface Character {
 
 export type CharacterChanges = Omit<Partial<Character>, "id" | "novelId">;
 
-export interface Relationship {
-  id: string;
-  fromId: string;
-  toId: string;
-  type: string;
-  description?: string;
+interface CRUDStore<T extends { id: string }, TChanges> {
+  get(): Promise<T[]>;
+  create(item: Omit<T, "id">): Promise<T>;
+  update(id: string, changes: TChanges): Promise<T>;
+  remove(id: string): Promise<T>;
+  removeMany(ids: string[]): Promise<T[]>;
+  select<R>(selector: (items: T[]) => R): Promise<R>;
+  subscribe(callback: WatchCallback<T[]>): () => void;
 }
 
-export const charactersStore = (() => {
-  const _storage = storage.defineItem<Character[]>("local:characters", {
+interface ValueStore<T> {
+  get(): Promise<T>;
+  set(value: T): Promise<T>;
+  subscribe(callback: WatchCallback<T>): () => void;
+}
+
+function createCRUDStore<T extends { id: string }, TChanges>(
+  storageKey: StorageItemKey,
+): CRUDStore<T, TChanges> {
+  const _storage = storage.defineItem<T[]>(storageKey, {
     fallback: [],
   });
-
-  function get(): Promise<Character[]> {
-    return _storage.getValue();
-  }
-
-  async function create(character: Omit<Character, "id">): Promise<Character> {
-    const newCharacter = { ...character, id: crypto.randomUUID() };
-    const characters = await _storage.getValue();
-    await _storage.setValue([...characters, newCharacter]);
-    return newCharacter;
-  }
-
-  async function update(
-    id: Character["id"],
-    characterChanges: CharacterChanges,
-  ): Promise<Character[]> {
-    const characters = await _storage.getValue();
-    await _storage.setValue(
-      characters.map((c) => (c.id === id ? { ...c, ...characterChanges } : c)),
-    );
-    return characters;
-  }
-
-  async function remove(id: Character["id"]): Promise<Character[]> {
-    const characters = await _storage.getValue();
-    const newCharacters = characters.filter((c) => c.id !== id);
-    await _storage.setValue(newCharacters);
-    return newCharacters;
-  }
-
-  async function removeMany(ids: Character["id"][]): Promise<Character[]> {
-    const characters = await _storage.getValue();
-    const newCharacters = characters.filter((c) => !ids.includes(c.id));
-    await _storage.setValue(newCharacters);
-    return newCharacters;
-  }
-
-  async function select<R>(
-    selector: (storageValue: Character[]) => R,
-  ): Promise<R> {
-    const storageValue = await _storage.getValue();
-    return selector(storageValue);
-  }
-
   return {
-    get,
-    create,
-    update,
-    remove,
-    removeMany,
-    select,
+    get() {
+      return _storage.getValue();
+    },
+
+    async create(item) {
+      const newItem = { ...item, id: crypto.randomUUID() } as T;
+      const items = await _storage.getValue();
+      await _storage.setValue([...items, newItem]);
+      return newItem;
+    },
+
+    async update(id, changes) {
+      const items = await _storage.getValue();
+      const index = items.findIndex((item) => item.id === id);
+      if (index === -1) {
+        throw new Error("Item not found");
+      }
+      const updatedItem = { ...items[index], ...changes };
+      const updatedItems = [...items];
+      updatedItems[index] = updatedItem;
+      await _storage.setValue(updatedItems);
+      return updatedItem;
+    },
+
+    async remove(id) {
+      const items = await _storage.getValue();
+      const index = items.findIndex((item) => item.id === id);
+      if (index === -1) {
+        throw new Error("Item not found");
+      }
+      const removedItem = items[index];
+      const newItems = items.filter((item) => item.id !== id);
+      await _storage.setValue(newItems);
+      return removedItem;
+    },
+
+    async removeMany(ids) {
+      const items = await _storage.getValue();
+      const removedItems = items.filter((item) => ids.includes(item.id));
+      const newItems = items.filter((item) => !ids.includes(item.id));
+      await _storage.setValue(newItems);
+      return removedItems;
+    },
+
+    async select(selector) {
+      const items = await _storage.getValue();
+      return selector(items);
+    },
+
     subscribe: _storage.watch,
   };
-})();
+}
 
-export const currentNovelIdStore = (() => {
-  const _storage = storage.defineItem<Novel["id"]>("local:currentNovel", {
-    fallback: "",
+function createValueStore<T>(
+  storageKey: StorageItemKey,
+  fallback: T,
+): ValueStore<T> {
+  const _storage = storage.defineItem<T>(storageKey, {
+    fallback,
   });
-
-  function get(): Promise<Novel["id"]> {
-    return _storage.getValue();
-  }
-
-  async function set(value: Novel["id"]): Promise<Novel["id"]> {
-    await _storage.setValue(value);
-    return get();
-  }
-
-  return { subscribe: _storage.watch, get, set };
-})();
-
-export const novelsStore = (() => {
-  const _storage = storage.defineItem<Novel[]>("local:novels", {
-    fallback: [],
-  });
-
-  function get(): Promise<Novel[]> {
-    return _storage.getValue();
-  }
-
-  async function set(value: Novel[]): Promise<Novel[]> {
-    await _storage.setValue(value);
-    return get();
-  }
-
-  async function create(novel: Omit<Novel, "id">): Promise<Novel> {
-    const newNovel = { ...novel, id: crypto.randomUUID() };
-    const novels = await _storage.getValue();
-    await _storage.setValue([...novels, newNovel]);
-    return newNovel;
-  }
-
-  async function update(
-    id: Novel["id"],
-    novelChanges: NovelChanges,
-  ): Promise<Novel[]> {
-    const novels = await _storage.getValue();
-    await _storage.setValue(
-      novels.map((n) => (n.id === id ? { ...n, ...novelChanges } : n)),
-    );
-    return novels;
-  }
-
-  async function remove(id: Novel["id"]): Promise<Novel[]> {
-    const novels = await _storage.getValue();
-    const newNovels = novels.filter((n) => n.id !== id);
-    await _storage.setValue(newNovels);
-    return newNovels;
-  }
-
-  async function select<R>(selector: (storageValue: Novel[]) => R): Promise<R> {
-    const storageValue = await _storage.getValue();
-    return selector(storageValue);
-  }
 
   return {
+    get() {
+      return _storage.getValue();
+    },
+
+    async set(value) {
+      await _storage.setValue(value);
+      return value;
+    },
+
     subscribe: _storage.watch,
-    get,
-    set,
-    create,
-    update,
-    remove,
-    select,
   };
-})();
+}
+
+export const charactersStore = createCRUDStore<Character, CharacterChanges>(
+  "local:characters",
+);
+export const novelsStore = createCRUDStore<Novel, NovelChanges>("local:novels");
+export const currentNovelIdStore = createValueStore<Novel["id"]>(
+  "local:currentNovel",
+  "",
+);

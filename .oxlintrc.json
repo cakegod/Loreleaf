@@ -23,6 +23,8 @@
     "no-non-null-assertion": "warn",
     "max-lines-per-function": "off",
     "arrow-body-style": "off",
-    "consistent-type-definitions": "off"
+    "consistent-type-definitions": "off",
+    "no-null": "off",
+    "explicit-function-return-type": "warn"
   }
 }

@@ -1,3 +1,4 @@
+// oxlint-disable explicit-function-return-type
 import type {
   Character,
   CharacterChanges,
@@ -6,67 +7,65 @@ import type {
 } from "@/utils/stores";
 import { sendMessage } from "webext-bridge/popup";
 
+// the return types are inferred
 const API = {
-  getCurrentCharacters(): Promise<Character[]> {
+  getCurrentCharacters() {
     return sendMessage(
       BACKGROUND_ACTIONS.GET_CHARACTERS,
       { type: "current" },
       "background",
     );
   },
-  getCharactersFromNovelId(novelId: Novel["id"]): Promise<Character[]> {
+  getCharactersFromNovelId(novelId: Novel["id"]) {
     return sendMessage(
       BACKGROUND_ACTIONS.GET_CHARACTERS,
       { type: "id", novelId },
       "background",
     );
   },
-  getCurrentNovelId(): Promise<Novel["id"]> {
+  getCurrentNovelId() {
     return sendMessage(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, {}, "background");
   },
-  getNovels(): Promise<Novel[]> {
+  getNovels() {
     return sendMessage(BACKGROUND_ACTIONS.GET_NOVELS, {}, "background");
   },
-  setCurrentNovel(novelId: string): Promise<Novel["id"]> {
+  setCurrentNovel(novelId: string) {
     return sendMessage(
       BACKGROUND_ACTIONS.SET_CURRENT_NOVEL,
       novelId,
       "background",
     );
   },
-  addNovel(data: Omit<Novel, "id">): Promise<Novel> {
+  addNovel(data: Omit<Novel, "id">) {
     return sendMessage(BACKGROUND_ACTIONS.ADD_NOVEL, data, "background");
   },
-  updateNovel(
-    novelId: Novel["id"],
-    novelChanges: NovelChanges,
-  ): Promise<Novel[]> {
+  updateNovel(novelId: Novel["id"], novelChanges: NovelChanges) {
     return sendMessage(
       BACKGROUND_ACTIONS.UPDATE_NOVEL,
       { novelId, novelChanges },
       "background",
     );
   },
-  removeNovel(id: Novel["id"]): Promise<Novel[]> {
+  removeNovel(id: Novel["id"]) {
     return sendMessage(BACKGROUND_ACTIONS.REMOVE_NOVEL, id, "background");
   },
-  addCharacter(data: Omit<Character, "id">): Promise<Character> {
+  addCharacter(data: Omit<Character, "id">) {
     return sendMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, data, "background");
   },
   updateCharacter(
     characterId: Character["id"],
     characterChanges: CharacterChanges,
-  ): Promise<Character[]> {
+  ) {
     return sendMessage(
       BACKGROUND_ACTIONS.UPDATE_CHARACTER,
       { characterId, characterChanges },
       "background",
     );
   },
-  removeCharacter(id: Character["id"]): Promise<Character[]> {
+  removeCharacter(id: Character["id"]) {
     return sendMessage(BACKGROUND_ACTIONS.REMOVE_CHARACTER, id, "background");
   },
-  removeManyCharacters(ids: Character["id"][]): Promise<Character[]> {
+  removeManyCharacters(ids: Character["id"][]) {
     return sendMessage(
       BACKGROUND_ACTIONS.REMOVE_MANY_CHARACTERS,
       ids,
