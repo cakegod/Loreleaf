@@ -50,39 +50,67 @@ function createCRUDStore<T extends { id: string }, TChanges>(
       const newItem = { ...item, id: crypto.randomUUID() } as T;
       const items = await _storage.getValue();
       await _storage.setValue([...items, newItem]);
+
       return newItem;
     },
 
     async update(id, changes) {
       const items = await _storage.getValue();
-      const index = items.findIndex((item) => item.id === id);
-      if (index === -1) {
-        throw new Error("Item not found");
+      const target = items.find((item) => item.id === id);
+
+      if (!target) {
+        throw new Error(`Item with id ${id} not found`);
       }
-      const updatedItem = { ...items[index], ...changes };
-      const updatedItems = [...items];
-      updatedItems[index] = updatedItem;
+
+      const updatedItem = { ...target, ...changes };
+      const updatedItems = items.map((item) =>
+        item.id === id ? updatedItem : item,
+      );
       await _storage.setValue(updatedItems);
+
       return updatedItem;
     },
 
     async remove(id) {
       const items = await _storage.getValue();
-      const index = items.findIndex((item) => item.id === id);
-      if (index === -1) {
-        throw new Error("Item not found");
+
+      let removedItem: T | null = null;
+      let filteredItems: T[] = [];
+
+      for (const item of items) {
+        if (item.id === id) {
+          removedItem = item;
+        } else {
+          filteredItems.push(item);
+        }
       }
-      const removedItem = items[index];
-      const newItems = items.filter((item) => item.id !== id);
-      await _storage.setValue(newItems);
+
+      if (!removedItem) {
+        throw new Error(`Item with id ${id} not found`);
+      }
+
+      await _storage.setValue(filteredItems);
+
       return removedItem;
     },
 
     async removeMany(ids) {
       const items = await _storage.getValue();
-      const removedItems = items.filter((item) => ids.includes(item.id));
-      const newItems = items.filter((item) => !ids.includes(item.id));
-      await _storage.setValue(newItems);
+
+      const removedItems = [];
+      const filteredItems = [];
+      const idsSet = new Set(ids);
+
+      for (const item of items) {
+        if (idsSet.has(item.id)) {
+          removedItems.push(item);
+        } else {
+          filteredItems.push(item);
+        }
+      }
+
+      await _storage.setValue(filteredItems);
+
       return removedItems;
     },
 
