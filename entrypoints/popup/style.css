@@ -4,8 +4,7 @@ h1 {
 
 body {
   width: 100%;
-  max-width: 40ch;
-  min-width: 300px;
+  max-width: min-content;
   margin: 12px;
 }
 
@@ -27,4 +26,25 @@ form {
 .current-novel-container {
   gap: 6px;
   display: grid;
+}
+
+li {
+  list-style: none;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+.characters_list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.characters_list__item {
+  display: flex;
+  justify-content: space-between;
+  border-block-end: 1px solid black;
 }

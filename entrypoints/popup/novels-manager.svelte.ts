@@ -203,6 +203,19 @@ export class NovelsManager {
     });
   }
 
+  async updateCharacter(
+    id: Character["id"],
+    characterChanges: CharacterChanges,
+  ): Promise<void> {
+    await this.#exec(async () => {
+      await API.updateCharacter(id, characterChanges);
+      const characters = await API.getCurrentCharacters();
+      return {
+        characters,
+      };
+    });
+  }
+
   async removeCharacter(id: Character["id"]): Promise<void> {
     await this.#exec(async () => {
       await API.removeCharacter(id);

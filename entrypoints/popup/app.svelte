@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fade } from "svelte/transition";
+	import { fade, slide } from "svelte/transition";
 	import { NovelsManager } from "./novels-manager.svelte";
 	import { onMount } from "svelte";
 
@@ -66,6 +66,7 @@
 					manager.setCurrentNovel((e.target as HTMLOptionElement).value);
 				}}
 			>
+				<option value="" disabled hidden>Select a novel</option>
 				{#each managerState.novels as novel}
 					<option
 						selected={novel.id === managerState.currentNovelId}
@@ -77,7 +78,14 @@
 			</select>
 		</div>
 		{#if managerState.currentNovelId}
-			<button onclick={() => manager.removeNovel(managerState.currentNovelId)}>
+			<button
+				onclick={() => {
+					confirm(
+						"Are you sure you want to remove this novel and all its characters?",
+					);
+					manager.removeNovel(managerState.currentNovelId);
+				}}
+			>
 				Remove Novel
 			</button>
 		{/if}
@@ -85,7 +93,7 @@
 	{#if managerState.currentNovelId}
 		<hr />
 		<form
-			onsubmit={async (e) => {
+			onsubmit={(e) => {
 				e.preventDefault();
 				manager.addCharacter(newCharacter);
 				newCharacter = {
@@ -128,9 +136,22 @@
 		Select a novel to add a new character
 	{/if}
 
-	<ul>
+	<ul class="characters_list">
 		{#each managerState.characters as character}
-			<li>{character.name}: {character.note}</li>
+			<li transition:slide>
+				<div class="characters_list__item">
+					<p>
+						{character.name}: {character.note}
+					</p>
+					<button
+						onclick={() => {
+							manager.removeCharacter(character.id);
+						}}
+					>
+						Delete
+					</button>
+				</div>
+			</li>
 		{/each}
 	</ul>
 {/if}
