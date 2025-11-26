@@ -4,9 +4,9 @@ declare module "webext-bridge" {
   export interface ProtocolMap {
     // Characters
     [BACKGROUND_ACTIONS.GET_CHARACTERS]: ProtocolWithReturn<
-      | { type: "all" }
-      | { type: "current" }
-      | { type: "id"; novelId: Novel["id"] },
+      | { scope: "all" }
+      | { scope: "current" }
+      | { scope: "byNovelId"; novelId: Novel["id"] },
       Character[]
     >;
     [BACKGROUND_ACTIONS.ADD_CHARACTER]: ProtocolWithReturn<

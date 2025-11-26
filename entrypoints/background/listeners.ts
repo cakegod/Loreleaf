@@ -4,54 +4,55 @@ import {
   novelsStore,
 } from "@/utils/stores";
 import { BACKGROUND_ACTIONS } from "@/utils/actions";
+import type { ProtocolMap } from "webext-bridge";
 import { onMessage } from "webext-bridge/background";
 
 // TODO: actually handle the errors
+function onMessageWithErrorHandling<K extends keyof ProtocolMap>(
+  action: K,
+  // oxlint-disable-next-line no-explicit-any
+  handler: Parameters<typeof onMessage<any, K>>[1],
+): void {
+  onMessage(action, async (message) => {
+    try {
+      return await handler(message);
+    } catch (error) {
+      console.error(`${action} failed:`, error);
+      throw error;
+    }
+  });
+}
 
 function registerCharacterListeners(): void {
-  onMessage(
+  onMessageWithErrorHandling(
     BACKGROUND_ACTIONS.REMOVE_CHARACTER,
-    async ({ data: characterId }) => {
-      try {
-        return await charactersStore.remove(characterId);
-      } catch (error) {
-        console.error("REMOVE_CHARACTER failed:", error);
-        throw error;
-      }
+    ({ data: characterId }) => {
+      return charactersStore.remove(characterId);
     },
   );
 
-  onMessage(
+  onMessageWithErrorHandling(
     BACKGROUND_ACTIONS.REMOVE_MANY_CHARACTERS,
-    async ({ data: characterIds }) => {
-      try {
-        return await charactersStore.removeMany(characterIds);
-      } catch (error) {
-        console.error("REMOVE_CHARACTER failed:", error);
-        throw error;
-      }
+    ({ data: characterIds }) => {
+      return charactersStore.removeMany(characterIds);
     },
   );
 
-  onMessage(
+  onMessageWithErrorHandling(
     BACKGROUND_ACTIONS.UPDATE_CHARACTER,
-    async ({ data: { characterId, characterChanges } }) => {
-      try {
-        return await charactersStore.update(characterId, characterChanges);
-      } catch (error) {
-        console.error("UPDATE_CHARACTER failed:", error);
-        throw error;
-      }
+    ({ data: { characterId, characterChanges } }) => {
+      return charactersStore.update(characterId, characterChanges);
     },
   );
 
-  onMessage(BACKGROUND_ACTIONS.GET_CHARACTERS, async ({ data }) => {
-    try {
-      switch (data.type) {
+  onMessageWithErrorHandling(
+    BACKGROUND_ACTIONS.GET_CHARACTERS,
+    async ({ data }) => {
+      switch (data.scope) {
         case "all": {
           return await charactersStore.get();
         }
-        case "id": {
+        case "byNovelId": {
           return await charactersStore.select((cs) =>
             cs.filter((c) => c.novelId === data.novelId),
           );
@@ -67,81 +68,48 @@ function registerCharacterListeners(): void {
           throw new Error("No get characters action type");
         }
       }
-    } catch (error) {
-      console.error("GET_CHARACTERS failed:", error);
-      throw error;
-    }
-  });
+    },
+  );
 
-  onMessage(BACKGROUND_ACTIONS.ADD_CHARACTER, async ({ data }) => {
-    try {
-      return await charactersStore.create(data);
-    } catch (error) {
-      console.error("ADD_CHARACTER failed:", error);
-      throw error;
-    }
+  onMessageWithErrorHandling(BACKGROUND_ACTIONS.ADD_CHARACTER, ({ data }) => {
+    return charactersStore.create(data);
   });
 }
 
 function registerNovelListeners(): void {
-  onMessage(BACKGROUND_ACTIONS.GET_NOVELS, async () => {
-    try {
-      return await novelsStore.get();
-    } catch (error) {
-      console.error("GET_NOVELS failed:", error);
-      throw error;
-    }
+  onMessageWithErrorHandling(BACKGROUND_ACTIONS.GET_NOVELS, () => {
+    return novelsStore.get();
   });
 
-  onMessage(BACKGROUND_ACTIONS.ADD_NOVEL, async ({ data }) => {
-    try {
-      return await novelsStore.create(data);
-    } catch (error) {
-      console.error("ADD_NOVEL failed:", error);
-      throw error;
-    }
+  onMessageWithErrorHandling(BACKGROUND_ACTIONS.ADD_NOVEL, ({ data }) => {
+    return novelsStore.create(data);
   });
 
-  onMessage(BACKGROUND_ACTIONS.REMOVE_NOVEL, async ({ data: novelId }) => {
-    try {
-      return await novelsStore.remove(novelId);
-    } catch (error) {
-      console.error("GET_CURRENT_NOVEL failed:", error);
-      throw error;
-    }
-  });
+  onMessageWithErrorHandling(
+    BACKGROUND_ACTIONS.REMOVE_NOVEL,
+    ({ data: novelId }) => {
+      return novelsStore.remove(novelId);
+    },
+  );
 
-  onMessage(
+  onMessageWithErrorHandling(
     BACKGROUND_ACTIONS.UPDATE_NOVEL,
-    async ({ data: { novelId, novelChanges } }) => {
-      try {
-        return await novelsStore.update(novelId, novelChanges);
-      } catch (error) {
-        console.error("UPDATE_CHARACTER failed:", error);
-        throw error;
-      }
+    ({ data: { novelId, novelChanges } }) => {
+      return novelsStore.update(novelId, novelChanges);
     },
   );
 }
 
 function registerCurrentNovelListeners(): void {
-  onMessage(BACKGROUND_ACTIONS.SET_CURRENT_NOVEL, async ({ data: novelId }) => {
-    try {
-      console.log("SET", novelId);
-      return await currentNovelIdStore.set(novelId);
-    } catch (error) {
-      console.error("SET_CURRENT_NOVEL failed:", error);
-      throw error;
-    }
-  });
+  onMessageWithErrorHandling(
+    BACKGROUND_ACTIONS.SET_CURRENT_NOVEL,
+    ({ data: novelId }) => {
+      return currentNovelIdStore.set(novelId);
+    },
+  );
 
-  onMessage(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, async () => {
-    try {
-      return await currentNovelIdStore.get();
-    } catch (error) {
-      console.error("GET_CURRENT_NOVEL failed:", error);
-      throw error;
-    }
+  onMessageWithErrorHandling(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, () => {
+    return currentNovelIdStore.get();
   });
 }
 

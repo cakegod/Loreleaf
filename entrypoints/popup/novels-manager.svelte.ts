@@ -12,14 +12,14 @@ const API = {
   getCurrentCharacters() {
     return sendMessage(
       BACKGROUND_ACTIONS.GET_CHARACTERS,
-      { type: "current" },
+      { scope: "current" },
       "background",
     );
   },
   getCharactersFromNovelId(novelId: Novel["id"]) {
     return sendMessage(
       BACKGROUND_ACTIONS.GET_CHARACTERS,
-      { type: "id", novelId },
+      { scope: "byNovelId", novelId },
       "background",
     );
   },

@@ -90,7 +90,7 @@ export default defineContentScript({
         // initial mark
         const characters = await sendMessage(
           BACKGROUND_ACTIONS.GET_CHARACTERS,
-          { type: "current" },
+          { scope: "current" },
           "background",
         );
 
@@ -108,7 +108,7 @@ export default defineContentScript({
         ctx.addEventListener(globalThis, "wxt:locationchange", async () => {
           const characters = await sendMessage(
             BACKGROUND_ACTIONS.GET_CHARACTERS,
-            { type: "current" },
+            { scope: "current" },
             "background",
           );
           markCharacters(characters, marker);
