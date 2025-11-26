@@ -9,7 +9,7 @@ import { sendMessage } from "webext-bridge/popup";
 
 // the return types are inferred
 const API = {
-  getCurrentCharacters() {
+  getCurrentNovelCharacters() {
     return sendMessage(
       BACKGROUND_ACTIONS.GET_CHARACTERS,
       { scope: "current" },
@@ -26,7 +26,7 @@ const API = {
   getCurrentNovelId() {
     return sendMessage(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, {}, "background");
   },
-  getNovels() {
+  getAllNovels() {
     return sendMessage(BACKGROUND_ACTIONS.GET_NOVELS, {}, "background");
   },
   setCurrentNovel(novelId: string) {
@@ -129,18 +129,25 @@ export class NovelsManager {
   }
 
   async init(): Promise<void> {
-    const [novels, currentNovelId, characters] = await Promise.all([
-      API.getNovels(),
-      API.getCurrentNovelId(),
-      API.getCurrentCharacters(),
-    ]);
+    try {
+      const [novels, currentNovelId, characters] = await Promise.all([
+        API.getAllNovels(),
+        API.getCurrentNovelId(),
+        API.getCurrentNovelCharacters(),
+      ]);
 
-    this.state = {
-      novels,
-      currentNovelId,
-      characters,
-      status: "idle",
-    };
+      this.state = {
+        novels,
+        currentNovelId,
+        characters,
+        status: "idle",
+      };
+    } catch (error) {
+      this.state = {
+        status: "error",
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 
   async addNovel(data: Omit<Novel, "id">): Promise<void> {
@@ -150,8 +157,8 @@ export class NovelsManager {
       await API.setCurrentNovel(newNovel.id);
 
       const [novels, characters] = await Promise.all([
-        API.getNovels(),
-        API.getCurrentCharacters(),
+        API.getAllNovels(),
+        API.getCurrentNovelCharacters(),
       ]);
 
       return {
@@ -164,21 +171,14 @@ export class NovelsManager {
 
   async removeNovel(novelId: Novel["id"]): Promise<void> {
     await this.#exec(async () => {
-      const charactersIds = await API.getCharactersFromNovelId(novelId).then(
-        (characters) => characters.map((c) => c.id),
-      );
-
-      await Promise.all([
-        API.removeManyCharacters(charactersIds),
-        API.removeNovel(novelId),
-        API.setCurrentNovel(""),
-      ]);
+      await Promise.all([API.removeNovel(novelId), API.setCurrentNovel("")]);
 
       const [currentNovelId, characters, novels] = await Promise.all([
         API.getCurrentNovelId(),
-        API.getCurrentCharacters(),
-        API.getNovels(),
+        API.getCurrentNovelCharacters(),
+        API.getAllNovels(),
       ]);
+
       return {
         currentNovelId,
         characters,
@@ -195,9 +195,9 @@ export class NovelsManager {
         novelId: currentNovelId,
       });
 
-      const characters = await API.getCurrentCharacters();
+      const characters = await API.getCurrentNovelCharacters();
+
       return {
-        ...this.state,
         characters,
       };
     });
@@ -209,7 +209,8 @@ export class NovelsManager {
   ): Promise<void> {
     await this.#exec(async () => {
       await API.updateCharacter(id, characterChanges);
-      const characters = await API.getCurrentCharacters();
+      const characters = await API.getCurrentNovelCharacters();
+
       return {
         characters,
       };
@@ -219,9 +220,9 @@ export class NovelsManager {
   async removeCharacter(id: Character["id"]): Promise<void> {
     await this.#exec(async () => {
       await API.removeCharacter(id);
-      const characters = await API.getCurrentCharacters();
+      const characters = await API.getCurrentNovelCharacters();
+
       return {
-        ...this.state,
         characters,
       };
     });
@@ -232,9 +233,10 @@ export class NovelsManager {
       await API.setCurrentNovel(novelId);
 
       const [characters, currentNovelId] = await Promise.all([
-        API.getCurrentCharacters(),
+        API.getCurrentNovelCharacters(),
         API.getCurrentNovelId(),
       ]);
+
       return {
         currentNovelId,
         characters,
@@ -248,9 +250,9 @@ export class NovelsManager {
   ): Promise<void> {
     await this.#exec(async () => {
       await API.updateNovel(id, novelChanges);
-      const novels = await API.getNovels();
+      const novels = await API.getAllNovels();
+
       return {
-        ...this.state,
         novels,
       };
     });

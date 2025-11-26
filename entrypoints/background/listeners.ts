@@ -88,6 +88,20 @@ function registerNovelListeners(): void {
   onMessageWithErrorHandling(
     BACKGROUND_ACTIONS.REMOVE_NOVEL,
     ({ data: novelId }) => {
+      charactersStore
+        .select((characters) => {
+          const charactersIds = [];
+
+          for (const character of characters) {
+            if (character.novelId === novelId) {
+              charactersIds.push(character.id);
+            }
+          }
+
+          return charactersIds;
+        })
+        .then(charactersStore.removeMany);
+
       return novelsStore.remove(novelId);
     },
   );
