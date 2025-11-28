@@ -9,10 +9,10 @@ import { sendMessage } from "webext-bridge/popup";
 
 // the return types are inferred
 const API = {
-  getCurrentNovelCharacters() {
+  getSelectedNovelCharacters() {
     return sendMessage(
       BACKGROUND_ACTIONS.GET_CHARACTERS,
-      { scope: "current" },
+      { scope: "selected" },
       "background",
     );
   },
@@ -23,15 +23,15 @@ const API = {
       "background",
     );
   },
-  getCurrentNovelId() {
-    return sendMessage(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, {}, "background");
+  getSelectedNovelId() {
+    return sendMessage(BACKGROUND_ACTIONS.GET_SELECTED_NOVEL, {}, "background");
   },
   getAllNovels() {
     return sendMessage(BACKGROUND_ACTIONS.GET_NOVELS, {}, "background");
   },
-  setCurrentNovel(novelId: string) {
+  setSelectedNovelId(novelId: string) {
     return sendMessage(
-      BACKGROUND_ACTIONS.SET_CURRENT_NOVEL,
+      BACKGROUND_ACTIONS.SET_SELECTED_NOVEL,
       novelId,
       "background",
     );
@@ -74,18 +74,18 @@ const API = {
   },
 };
 
-type IdleState = {
+type ReadyState = {
   novels: Novel[];
-  currentNovelId: Novel["id"];
-  characters: Character[];
-  status: "idle";
+  selectedNovelId: Novel["id"];
+  selectedNovelCharacters: Character[];
+  status: "ready";
 };
 
 // TODO: during loading there can be or not data
 type LoadingState = {
   novels: Novel[];
-  currentNovelId: Novel["id"];
-  characters: Character[];
+  selectedNovelId: Novel["id"];
+  selectedNovelCharacters: Character[];
   status: "loading";
 };
 
@@ -98,14 +98,23 @@ type ErrorState = {
   errorMessage: string;
 };
 
-type NovelsState = IdleState | LoadingState | InitializingState | ErrorState;
+type NovelsState = ReadyState | LoadingState | InitializingState | ErrorState;
+type ReadyStateUpdate = Partial<Omit<ReadyState, "status">>;
+
+// fancy type to check excessive props
+// related discussion: https://stackoverflow.com/questions/58864033/in-typescript-is-there-a-way-to-restrict-extra-excess-properties-for-a-partial
+type Exactly<T> = T & {
+  [K in keyof T as K extends keyof ReadyStateUpdate ? never : K]: never;
+};
 
 export class NovelsManager {
   state = $state<NovelsState>({
     status: "initializing",
   });
 
-  async #exec(fn: () => Promise<Partial<NovelsState>>): Promise<void> {
+  async #runWithLoading<T extends ReadyStateUpdate>(
+    fn: () => Promise<Exactly<T>>,
+  ): Promise<void> {
     if (
       this.state.status === "loading" ||
       this.state.status === "initializing" ||
@@ -118,7 +127,7 @@ export class NovelsManager {
 
     try {
       const result = await fn();
-      this.state = { ...this.state, ...result, status: "idle" };
+      this.state = { ...this.state, ...result, status: "ready" };
     } catch (error) {
       this.state = {
         ...this.state,
@@ -128,19 +137,20 @@ export class NovelsManager {
     }
   }
 
-  async init(): Promise<void> {
+  init = async (): Promise<void> => {
     try {
-      const [novels, currentNovelId, characters] = await Promise.all([
-        API.getAllNovels(),
-        API.getCurrentNovelId(),
-        API.getCurrentNovelCharacters(),
-      ]);
+      const [novels, selectedNovelId, selectedNovelCharacters] =
+        await Promise.all([
+          API.getAllNovels(),
+          API.getSelectedNovelId(),
+          API.getSelectedNovelCharacters(),
+        ]);
 
       this.state = {
         novels,
-        currentNovelId,
-        characters,
-        status: "idle",
+        selectedNovelId,
+        selectedNovelCharacters,
+        status: "ready",
       };
     } catch (error) {
       this.state = {
@@ -148,107 +158,110 @@ export class NovelsManager {
         errorMessage: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  }
+  };
 
-  async addNovel(data: Omit<Novel, "id">): Promise<void> {
-    await this.#exec(async () => {
+  addNovel = async (data: Omit<Novel, "id">): Promise<void> => {
+    await this.#runWithLoading(async () => {
       const newNovel = await API.addNovel(data);
 
-      await API.setCurrentNovel(newNovel.id);
+      await API.setSelectedNovelId(newNovel.id);
 
-      const [novels, characters] = await Promise.all([
+      const [novels, selectedNovelCharacters] = await Promise.all([
         API.getAllNovels(),
-        API.getCurrentNovelCharacters(),
+        API.getSelectedNovelCharacters(),
       ]);
 
       return {
         novels,
-        characters,
-        currentNovelId: newNovel.id,
+        selectedNovelCharacters,
+        selectedNovelId: newNovel.id,
       };
     });
-  }
+  };
 
-  async removeNovel(novelId: Novel["id"]): Promise<void> {
-    await this.#exec(async () => {
-      await Promise.all([API.removeNovel(novelId), API.setCurrentNovel("")]);
+  removeNovel = async (novelId: Novel["id"]): Promise<void> => {
+    await this.#runWithLoading(async () => {
+      await Promise.all([API.removeNovel(novelId), API.setSelectedNovelId("")]);
 
-      const [currentNovelId, characters, novels] = await Promise.all([
-        API.getCurrentNovelId(),
-        API.getCurrentNovelCharacters(),
-        API.getAllNovels(),
-      ]);
+      const [selectedNovelId, selectedNovelCharacters, novels] =
+        await Promise.all([
+          API.getSelectedNovelId(),
+          API.getSelectedNovelCharacters(),
+          API.getAllNovels(),
+        ]);
 
       return {
-        currentNovelId,
-        characters,
+        selectedNovelId,
+        selectedNovelCharacters,
         novels,
       };
     });
-  }
+  };
 
-  async addCharacter(data: Omit<Character, "id" | "novelId">): Promise<void> {
-    await this.#exec(async () => {
-      const currentNovelId = await API.getCurrentNovelId();
+  addCharacter = async (
+    data: Omit<Character, "id" | "novelId">,
+  ): Promise<void> => {
+    await this.#runWithLoading(async () => {
+      const currentNovelId = await API.getSelectedNovelId();
       await API.addCharacter({
         ...data,
         novelId: currentNovelId,
       });
 
-      const characters = await API.getCurrentNovelCharacters();
+      const selectedNovelCharacters = await API.getSelectedNovelCharacters();
 
       return {
-        characters,
+        selectedNovelCharacters,
       };
     });
-  }
+  };
 
-  async updateCharacter(
+  updateCharacter = async (
     id: Character["id"],
     characterChanges: CharacterChanges,
-  ): Promise<void> {
-    await this.#exec(async () => {
+  ): Promise<void> => {
+    await this.#runWithLoading(async () => {
       await API.updateCharacter(id, characterChanges);
-      const characters = await API.getCurrentNovelCharacters();
+      const selectedNovelCharacters = await API.getSelectedNovelCharacters();
 
       return {
-        characters,
+        selectedNovelCharacters,
       };
     });
-  }
+  };
 
-  async removeCharacter(id: Character["id"]): Promise<void> {
-    await this.#exec(async () => {
+  removeCharacter = async (id: Character["id"]): Promise<void> => {
+    await this.#runWithLoading(async () => {
       await API.removeCharacter(id);
-      const characters = await API.getCurrentNovelCharacters();
+      const selectedNovelCharacters = await API.getSelectedNovelCharacters();
 
       return {
-        characters,
+        selectedNovelCharacters,
       };
     });
-  }
+  };
 
-  async setCurrentNovel(novelId: Novel["id"]): Promise<void> {
-    await this.#exec(async () => {
-      await API.setCurrentNovel(novelId);
+  setSelectedNovel = async (novelId: Novel["id"]): Promise<void> => {
+    await this.#runWithLoading(async () => {
+      await API.setSelectedNovelId(novelId);
 
-      const [characters, currentNovelId] = await Promise.all([
-        API.getCurrentNovelCharacters(),
-        API.getCurrentNovelId(),
+      const [selectedNovelCharacters, selectedNovelId] = await Promise.all([
+        API.getSelectedNovelCharacters(),
+        API.getSelectedNovelId(),
       ]);
 
       return {
-        currentNovelId,
-        characters,
+        selectedNovelId,
+        selectedNovelCharacters,
       };
     });
-  }
+  };
 
-  async updateNovel(
+  updateNovel = async (
     id: Novel["id"],
     novelChanges: NovelChanges,
-  ): Promise<void> {
-    await this.#exec(async () => {
+  ): Promise<void> => {
+    await this.#runWithLoading(async () => {
       await API.updateNovel(id, novelChanges);
       const novels = await API.getAllNovels();
 
@@ -256,5 +269,5 @@ export class NovelsManager {
         novels,
       };
     });
-  }
+  };
 }

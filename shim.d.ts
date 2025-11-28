@@ -5,7 +5,7 @@ declare module "webext-bridge" {
     // Characters
     [BACKGROUND_ACTIONS.GET_CHARACTERS]: ProtocolWithReturn<
       | { scope: "all" }
-      | { scope: "current" }
+      | { scope: "selected" }
       | { scope: "byNovelId"; novelId: Novel["id"] },
       Character[]
     >;
@@ -46,11 +46,11 @@ declare module "webext-bridge" {
     >;
 
     // Current novel
-    [BACKGROUND_ACTIONS.GET_CURRENT_NOVEL]: ProtocolWithReturn<
+    [BACKGROUND_ACTIONS.GET_SELECTED_NOVEL]: ProtocolWithReturn<
       unknown,
       Novel["id"]
     >;
-    [BACKGROUND_ACTIONS.SET_CURRENT_NOVEL]: ProtocolWithReturn<
+    [BACKGROUND_ACTIONS.SET_SELECTED_NOVEL]: ProtocolWithReturn<
       Novel["id"],
       Novel["id"]
     >;

@@ -57,7 +57,7 @@ function registerCharacterListeners(): void {
             cs.filter((c) => c.novelId === data.novelId),
           );
         }
-        case "current": {
+        case "selected": {
           const currentNovelId = await currentNovelIdStore.get();
           return await charactersStore.select((cs) =>
             cs.filter((c) => c.novelId === currentNovelId),
@@ -116,13 +116,13 @@ function registerNovelListeners(): void {
 
 function registerCurrentNovelListeners(): void {
   onMessageWithErrorHandling(
-    BACKGROUND_ACTIONS.SET_CURRENT_NOVEL,
+    BACKGROUND_ACTIONS.SET_SELECTED_NOVEL,
     ({ data: novelId }) => {
       return currentNovelIdStore.set(novelId);
     },
   );
 
-  onMessageWithErrorHandling(BACKGROUND_ACTIONS.GET_CURRENT_NOVEL, () => {
+  onMessageWithErrorHandling(BACKGROUND_ACTIONS.GET_SELECTED_NOVEL, () => {
     return currentNovelIdStore.get();
   });
 }
